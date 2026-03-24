@@ -121,10 +121,19 @@ export default async function WizardStepPage({ params }: Props) {
   if (step === "review") {
     const { data: sceneJobs } = await supabase
       .from("generation_jobs")
-      .select("id, status, error, input, output, created_at")
+      .select("id, status, error, input, output, created_at, updated_at, progress")
       .eq("project_id", project.id)
       .eq("kind", "scene_video")
       .order("created_at", { ascending: true });
+
+    const { data: composeJobRow } = await supabase
+      .from("generation_jobs")
+      .select("id, status, error, input, output, created_at, updated_at, progress")
+      .eq("project_id", project.id)
+      .eq("kind", "compose")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     const { data: videoClips } = await supabase
       .from("project_assets")
@@ -133,11 +142,73 @@ export default async function WizardStepPage({ params }: Props) {
       .eq("type", "video_clip")
       .order("sort_order", { ascending: true, nullsFirst: false });
 
+    const { data: voiceAsset } = await supabase
+      .from("project_assets")
+      .select("storage_path")
+      .eq("project_id", project.id)
+      .eq("type", "voice_sample")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    let voiceoverAudioUrl: string | null = null;
+    if (voiceAsset?.storage_path) {
+      const { data: signed } = await supabase.storage
+        .from("generated-audio")
+        .createSignedUrl(voiceAsset.storage_path, 3600);
+      voiceoverAudioUrl = signed?.signedUrl ?? null;
+    }
+
+    const { data: musicAsset } = await supabase
+      .from("project_assets")
+      .select("storage_path")
+      .eq("project_id", project.id)
+      .eq("type", "music")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    let musicAudioUrl: string | null = null;
+    if (musicAsset?.storage_path) {
+      const { data: signed } = await supabase.storage
+        .from("generated-audio")
+        .createSignedUrl(musicAsset.storage_path, 3600);
+      musicAudioUrl = signed?.signedUrl ?? null;
+    }
+
+    const { data: finalRenderAsset } = await supabase
+      .from("project_assets")
+      .select("id, storage_path")
+      .eq("project_id", project.id)
+      .eq("type", "final_render")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    let finalRenderUrl: string | null = null;
+    let renderPath = finalRenderAsset?.storage_path ?? null;
+    if (!renderPath && composeJobRow?.output && typeof composeJobRow.output === "object") {
+      const out = composeJobRow.output as Record<string, unknown>;
+      if (typeof out.storage_path === "string" && out.storage_path.length > 0) {
+        renderPath = out.storage_path;
+      }
+    }
+    if (renderPath) {
+      const { data: signed } = await supabase.storage
+        .from("renders")
+        .createSignedUrl(renderPath, 3600);
+      finalRenderUrl = signed?.signedUrl ?? null;
+    }
+
     return (
       <ReviewStep
         {...common}
         sceneJobs={sceneJobs ?? []}
+        composeJob={composeJobRow}
         videoClips={videoClips ?? []}
+        voiceoverAudioUrl={voiceoverAudioUrl}
+        musicAudioUrl={musicAudioUrl}
+        finalRenderUrl={finalRenderUrl}
       />
     );
   }
@@ -201,8 +272,32 @@ export default async function WizardStepPage({ params }: Props) {
     }
     case "arrange":
       return <ArrangeStep {...common} />;
-    case "music":
-      return <MusicStep {...common} />;
+    case "music": {
+      const { data: musicAsset } = await supabase
+        .from("project_assets")
+        .select("storage_path")
+        .eq("project_id", project.id)
+        .eq("type", "music")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      let musicAudioUrl: string | null = null;
+      if (musicAsset?.storage_path) {
+        const { data: signed } = await supabase.storage
+          .from("generated-audio")
+          .createSignedUrl(musicAsset.storage_path, 3600);
+        musicAudioUrl = signed?.signedUrl ?? null;
+      }
+
+      return (
+        <MusicStep
+          {...common}
+          elevenLabsConfigured={isElevenLabsConfigured()}
+          musicAudioUrl={musicAudioUrl}
+        />
+      );
+    }
     default:
       notFound();
   }
