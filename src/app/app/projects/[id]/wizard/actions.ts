@@ -1,10 +1,17 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { processGenerationJob } from "@/lib/jobs/process-generation-job";
-import { processNextSceneVideoJob } from "@/lib/jobs/run-scene-queue";
+import { shouldDeferCompose } from "@/lib/jobs/compose-video";
+import {
+  processComposeJobsUntilDeadline,
+  processNextSceneVideoJob,
+  processSceneVideoJobsUntilDeadline,
+} from "@/lib/jobs/run-scene-queue";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { shouldProcessSceneVideoWithFal } from "@/lib/jobs/scene-video-fal";
 import { getWizardFromMetadata, mergeWizardMetadata } from "@/lib/wizard/metadata";
 import { buildListingContextForScript } from "@/lib/ai/listing-script-context";
@@ -13,6 +20,11 @@ import {
   ELEVENLABS_MAX_TTS_SCRIPT_CHARS,
   synthesizeVoiceMp3,
 } from "@/lib/ai/elevenlabs-tts";
+import {
+  buildMusicPromptForElevenLabs,
+  clampMusicLengthMs,
+  composeMusicMp3,
+} from "@/lib/ai/elevenlabs-music";
 import { getElevenLabsApiKey } from "@/lib/ai/elevenlabs-env";
 import { generateVoiceoverScriptFromListing } from "@/lib/ai/openai-listing-script";
 import {
@@ -38,7 +50,7 @@ async function assertProject(projectId: string) {
   }
   const { data: project, error } = await supabase
     .from("projects")
-    .select("id, metadata, listing_url")
+    .select("id, metadata, listing_url, duration_seconds")
     .eq("id", projectId)
     .eq("user_id", user.id)
     .single();
@@ -530,13 +542,17 @@ export async function enqueueMockJob(
         .eq("idempotency_key", idempotencyKey)
         .single();
       if (existing?.id) {
-        const defer =
+        const deferScene =
           kind === "scene_video" && shouldProcessSceneVideoWithFal();
-        if (!defer) {
+        const deferCompose = kind === "compose" && shouldDeferCompose();
+        if (!deferScene && !deferCompose) {
           const result = await processGenerationJob(supabase, existing.id);
           if (!result.ok) {
             throw new Error(result.error);
           }
+        }
+        if (deferCompose) {
+          await scheduleComposeProcessing(projectId);
         }
         revalidatePath(`/app/projects/${projectId}/wizard`);
         return { ok: true as const, jobId: existing.id };
@@ -551,12 +567,17 @@ export async function enqueueMockJob(
 
   const deferScene =
     kind === "scene_video" && shouldProcessSceneVideoWithFal();
+  const deferCompose = kind === "compose" && shouldDeferCompose();
 
-  if (!deferScene) {
+  if (!deferScene && !deferCompose) {
     const result = await processGenerationJob(supabase, job.id);
     if (!result.ok) {
       throw new Error(result.error);
     }
+  }
+
+  if (deferCompose) {
+    await scheduleComposeProcessing(projectId);
   }
 
   revalidatePath(`/app/projects/${projectId}/wizard`);
@@ -592,7 +613,7 @@ export async function enqueueSceneVideoJobs(projectId: string) {
         storage_path: p.storage_path,
         scene_index: sceneIndex,
         prompt:
-          "Smooth, cinematic camera movement showcasing this real estate interior.",
+          "Very subtle parallax or slow push-in only; no dramatic moves.",
         duration_sec: SECONDS_PER_SCENE,
       },
     });
@@ -751,12 +772,32 @@ export async function processOneQueuedSceneVideoJob(projectId: string) {
 
 export async function resetFailedSceneVideoJobs(projectId: string) {
   const { supabase } = await assertProject(projectId);
-  await supabase
+
+  const { data: failed, error: fetchErr } = await supabase
     .from("generation_jobs")
-    .update({ status: "queued", error: null, output: null })
+    .select("id, output")
     .eq("project_id", projectId)
     .eq("kind", "scene_video")
     .eq("status", "failed");
+
+  if (fetchErr) {
+    throw new Error(fetchErr.message);
+  }
+
+  for (const row of failed ?? []) {
+    const out = row.output as Record<string, unknown> | null;
+    const hasFalUrl =
+      typeof out?.fal_video_url === "string" && out.fal_video_url.trim().length > 0;
+
+    await supabase
+      .from("generation_jobs")
+      .update({
+        status: "queued",
+        error: null,
+        ...(hasFalUrl ? {} : { output: null }),
+      })
+      .eq("id", row.id);
+  }
 
   revalidatePath(`/app/projects/${projectId}/wizard`);
 }
