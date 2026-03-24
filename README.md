@@ -7,12 +7,12 @@ Next.js (App Router), Tailwind, shadcn/ui, Supabase (Postgres + Auth + Storage),
 - **Pricing & billing**: `/pricing` (pay-first checkout) and Stripe webhooks updating `profiles`.
 - **Listing video wizard**: `/app/projects/[id]/wizard/[step]` with steps **photos → voiceover → arrange → music → review**.
   - **Photos**: duration tiers (20s / 40s / 60s → 5 / 10 / 15 photos), optional listing URL, uploads to Storage bucket `listing-photos`. On Continue, **`listing_snapshots`** is filled from **Apify** (`maxcopell/zillow-detail-scraper`) when `APIFY_API_TOKEN` is set; otherwise a stub snapshot is stored.
-  - **Voiceover**: script editor, mock **script** and **voice** jobs (`generation_jobs`, provider `mock`).
+  - **Voiceover**: script editor, synchronous **script** and **voice** jobs (`generation_jobs`).
   - **Arrange**: drag-and-drop photo order (`@dnd-kit`), updates `sort_order`.
-  - **Music**: preset cards + prompt, mock **music** job or skip.
-  - **Review**: summary, mock waveform placeholders, captions toggle, **Generate video clips** (per-photo **`scene_video`** jobs). With **`FAL_AI_KEY`**, clips are generated via **Fal.ai** (default model `fal-ai/kling-video/v2.1/standard/image-to-video`, overridable with `FAL_SCENE_VIDEO_MODEL`), uploaded to **`generated-video`**, and linked as **`project_assets`** (`type: video_clip`). Without Fal credentials, jobs still complete using the mock processor.
+  - **Music**: preset cards + prompt, **music** job or skip.
+  - **Review**: summary, waveform placeholders when audio URLs are absent, captions toggle, **Generate video clips** (per-photo **`scene_video`** jobs). With **`FAL_AI_KEY`**, clips are generated via **Fal.ai** (default model `fal-ai/kling-video/v2.1/standard/image-to-video`, overridable with `FAL_SCENE_VIDEO_MODEL`), uploaded to **`generated-video`**, and linked as **`project_assets`** (`type: video_clip`). Without Fal credentials, jobs still complete via the synchronous placeholder processor.
 
-Script, voice, and music jobs are still completed synchronously via [`src/lib/jobs/mock-process.ts`](src/lib/jobs/mock-process.ts). Scene video jobs use [`src/lib/jobs/process-generation-job.ts`](src/lib/jobs/process-generation-job.ts) to choose mock vs Fal.
+Script, voice, and music jobs are completed synchronously via [`src/lib/jobs/mock-process.ts`](src/lib/jobs/mock-process.ts). Scene video jobs use [`src/lib/jobs/process-generation-job.ts`](src/lib/jobs/process-generation-job.ts) to choose the placeholder processor vs Fal.
 
 [`POST /api/jobs`](src/app/api/jobs/route.ts) enqueues a job and runs the processor immediately except for **`scene_video`** when Fal is configured (jobs stay **queued** until processed).
 
@@ -42,7 +42,7 @@ Copy `.env.example` to `.env.local` and fill in values.
 | `APIFY_USER_ID` | Optional; not required for REST |
 | `FAL_AI_KEY` | Fal.ai API key for image-to-video clips (server-only) |
 | `FAL_SCENE_VIDEO_MODEL` | Optional Fal endpoint id (see `.env.example` default) |
-| `USE_MOCK_VIDEO` | If `true` / `1`, force mock `scene_video` even when `FAL_AI_KEY` is set |
+| `USE_MOCK_VIDEO` | If `true` / `1`, force placeholder `scene_video` even when `FAL_AI_KEY` is set |
 | `LISTING_INGEST_FALLBACK_STUB` | If `true` / `1`, save stub `listing_snapshots` when Apify fails instead of surfacing an error |
 | `CRON_SECRET` | Bearer token for `GET /api/cron/process-jobs` |
 | `CRON_SCENE_JOBS_BATCH` | Optional; max jobs per cron run (default 3, max 10) |
@@ -86,4 +86,4 @@ Scraping third-party listing sites may conflict with their terms of use. Use Api
 
 ## Next steps (more providers)
 
-Swap remaining mock completion in [`mock-process.ts`](src/lib/jobs/mock-process.ts) for real **script**, **voice**, **music**, and **compose** providers; keep using `generation_jobs` for status and outputs.
+Swap remaining placeholder completion in [`mock-process.ts`](src/lib/jobs/mock-process.ts) for real **script**, **voice**, **music**, and **compose** providers; keep using `generation_jobs` for status and outputs.

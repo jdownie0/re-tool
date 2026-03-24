@@ -33,7 +33,7 @@ export function ffmpegAvailable(): boolean {
 
 /**
  * Real FFmpeg compose when: `ENABLE_COMPOSE=1`, or unset/`auto` and ffmpeg is on PATH.
- * Set `ENABLE_COMPOSE=0` to force mock (first-clip-only) export.
+ * Set `ENABLE_COMPOSE=0` to force preview (first-clip-only) export.
  */
 export function shouldProcessComposeWithFfmpeg(): boolean {
   const v = process.env.ENABLE_COMPOSE?.trim().toLowerCase();

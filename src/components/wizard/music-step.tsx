@@ -117,7 +117,7 @@ export function MusicStep({
         <p className="text-muted-foreground mt-1 text-sm">
           {elevenLabsConfigured
             ? "Pick a mood or describe a style. We generate instrumental background audio with Eleven Labs (length matches your video duration)."
-            : "Pick a mood or describe a style. Without an Eleven Labs key, this step uses an instant mock placeholder."}
+            : "Pick a mood or describe a style. Without an Eleven Labs key, this step uses a simple placeholder track."}
         </p>
       </div>
 
@@ -166,7 +166,7 @@ export function MusicStep({
       {wizard.musicMockReady && !wizard.musicSkipped ? (
         <div className="bg-muted/40 space-y-3 rounded-lg border p-4">
           <p className="text-sm font-medium">
-            {musicAudioUrl ? "Background music ready" : "Mock music track ready"}
+            Background music ready
           </p>
           {musicAudioUrl ? (
             <audio
@@ -198,7 +198,7 @@ export function MusicStep({
           onClick={generateMusic}
         >
           <Sparkles className="size-4" />
-          {elevenLabsConfigured ? "Generate music" : "Generate music (mock)"}
+          Generate music
         </Button>
         <Button type="button" variant="outline" disabled={busy} onClick={skip}>
           Skip background music

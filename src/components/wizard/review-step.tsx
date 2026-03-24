@@ -514,7 +514,7 @@ export function ReviewStep({
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-3 rounded-lg border p-4">
             <p className="text-sm font-medium">
-              {voiceoverAudioUrl ? "Voiceover" : "Voiceover (mock)"}
+              Voiceover
             </p>
             {voiceoverAudioUrl ? (
               <audio

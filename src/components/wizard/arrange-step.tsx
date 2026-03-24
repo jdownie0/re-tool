@@ -84,7 +84,7 @@ export function ArrangeStep({ projectId, photos: initialPhotos }: Props) {
       <div>
         <h2 className="text-lg font-semibold tracking-tight">Arrange scenes</h2>
         <p className="text-muted-foreground mt-1 text-sm">
-          Drag photos into order. Each slot is roughly {SECONDS_PER_SCENE}s in the final video (mock).
+          Drag photos into order. Each slot is roughly {SECONDS_PER_SCENE}s in the final video.
         </p>
       </div>
 

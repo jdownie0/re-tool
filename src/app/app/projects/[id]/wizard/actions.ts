@@ -75,7 +75,7 @@ export async function updateWizardMetadata(
 
 /**
  * Generates voiceover script text from `listing_snapshots` (Apify/Zillow data) via OpenAI.
- * Requires `OPEN_AI_SECRET` (or `OPENAI_API_KEY`). Updates `wizard.scriptDraft` and marks script ready for the mock voice pipeline.
+ * Requires `OPEN_AI_SECRET` (or `OPENAI_API_KEY`). Updates `wizard.scriptDraft` and marks script ready for the voice pipeline.
  */
 export async function generateListingScriptWithOpenAI(projectId: string) {
   const { supabase, user } = await assertProject(projectId);

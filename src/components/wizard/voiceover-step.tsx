@@ -46,7 +46,7 @@ type Props = {
   voiceoverAudioUrl: string | null;
 };
 
-/** Eleven Labs `voice_id` values are alphanumeric strings, not UUIDs. Only our static mock rows lack a real TTS id. */
+/** Eleven Labs `voice_id` values are alphanumeric strings, not UUIDs. Only our static preset rows lack a real TTS id. */
 const MOCK_VOICE_IDS = new Set<string>(VOICE_PRESETS.map((p) => p.id));
 
 function canPreviewThisVoice(voiceId: string): boolean {

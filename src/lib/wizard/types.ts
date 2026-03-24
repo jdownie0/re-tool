@@ -16,7 +16,7 @@ export type WizardMetadata = {
   version: 1;
   captionsEnabled: boolean;
   scriptDraft: string;
-  /** Mock: script job completed at least once */
+  /** Script job completed at least once */
   scriptMockReady?: boolean;
   voicePreset: string;
   voiceMockReady: boolean;
@@ -25,7 +25,7 @@ export type WizardMetadata = {
   musicPrompt: string;
   musicSkipped: boolean;
   musicMockReady: boolean;
-  /** Target length used for Eleven Labs compose / mock (ms). */
+  /** Target length used for Eleven Labs compose / preview (ms). */
   musicDurationMs?: number;
 };
 
