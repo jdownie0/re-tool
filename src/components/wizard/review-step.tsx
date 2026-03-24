@@ -524,14 +524,14 @@ export function ReviewStep({
                 preload="metadata"
               />
             ) : (
-              <MockWave durationSec={(wizard.voiceDurationMs ?? 18000) / 1000} />
+              <WaveformPreview durationSec={(wizard.voiceDurationMs ?? 18000) / 1000} />
             )}
           </div>
           <div className="space-y-3 rounded-lg border p-4">
             {!wizard.musicSkipped && wizard.musicMockReady ? (
               <>
                 <p className="text-sm font-medium">
-                  {musicAudioUrl ? "Background music" : "Background music (mock)"}
+                  Background music
                 </p>
                 {musicAudioUrl ? (
                   <audio
@@ -541,7 +541,7 @@ export function ReviewStep({
                     preload="metadata"
                   />
                 ) : (
-                  <MockWave
+                  <WaveformPreview
                     durationSec={(wizard.musicDurationMs ?? 20_000) / 1000}
                   />
                 )}
@@ -694,7 +694,7 @@ function formatMmSs(totalSeconds: number) {
   return `${mm}:${String(ss).padStart(2, "0")}`;
 }
 
-function MockWave({ durationSec }: { durationSec: number }) {
+function WaveformPreview({ durationSec }: { durationSec: number }) {
   const bars = Array.from({ length: 36 }, (_, i) => 25 + ((i * 13) % 50));
   return (
     <div className="flex items-center gap-2">
