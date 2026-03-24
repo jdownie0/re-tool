@@ -65,10 +65,10 @@ export default async function ProjectsPage() {
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 pb-4">
       <header>
         <h1 className="font-[family-name:var(--font-app-heading)] text-4xl font-semibold tracking-tight text-[var(--app-foreground)] md:text-5xl">
-          Projects
+          Videos
         </h1>
         <p className="mt-2 max-w-xl text-sm text-[var(--app-muted)]">
-          Open a listing to continue your video, or create a new project.
+          Open a listing to continue your video, or create a new video.
         </p>
       </header>
 

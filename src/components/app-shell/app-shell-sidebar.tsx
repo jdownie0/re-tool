@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FolderOpen, ImageIcon, LogOut, SquarePlay } from "lucide-react";
+import { Clapperboard, ImageIcon, LogOut, SquarePlay } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOut } from "@/app/app/actions";
 
@@ -94,10 +94,10 @@ export function AppShellSidebar() {
           icon={<ImageIcon className="size-[18px]" aria-hidden />}
         />
         <NavItem
-          href="/app/projects"
-          label="Projects"
-          active={projectsActive}
-          icon={<FolderOpen className="size-[18px]" aria-hidden />}
+          href="/app/videos"
+          label="Videos"
+          active={videosActive}
+          icon={<Clapperboard className="size-[18px]" aria-hidden />}
         />
       </nav>
 

@@ -647,13 +647,13 @@ export function ReviewStep({
           ) : null}
           <div className="flex flex-wrap gap-3 pt-1">
             <Link
-              href={`/app/projects/${projectId}/wizard/music`}
+              href={`/app/videos/${projectId}/wizard/music`}
               className={cn(buttonVariants({ variant: "outline" }))}
             >
               Back
             </Link>
-            <Link href="/app/projects" className={cn(buttonVariants({ variant: "ghost" }))}>
-              All projects
+            <Link href="/app/videos" className={cn(buttonVariants({ variant: "ghost" }))}>
+              All videos
             </Link>
           </div>
         </section>

@@ -77,8 +77,8 @@ export default async function ProjectDetailPage({ params }: Props) {
         </CardContent>
       </Card>
 
-      <Link href="/app/projects" className={cn(buttonVariants({ variant: "outline" }))}>
-        ← All projects
+      <Link href="/app/videos" className={cn(buttonVariants({ variant: "outline" }))}>
+        ← All videos
       </Link>
     </div>
   );

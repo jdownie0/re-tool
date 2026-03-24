@@ -483,13 +483,13 @@ export function PhotosStep({
           Continue to voiceover
         </Button>
         <Link
-          href="/app/projects"
+          href="/app/videos"
           className={cn(
             buttonVariants({ variant: "ghost" }),
             "text-[var(--app-accent)] hover:bg-[color-mix(in_oklab,var(--app-accent)_8%,transparent)] hover:text-[var(--app-accent)]",
           )}
         >
-          All projects
+          All videos
         </Link>
       </div>
     </div>

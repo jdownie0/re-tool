@@ -83,10 +83,10 @@ export default async function BillingPage() {
           </Link>
         )}
         <Link
-          href="/app/projects"
+          href="/app/videos"
           className={cn(buttonVariants({ variant: "outline" }))}
         >
-          Back to projects
+          Back to videos
         </Link>
       </div>
     </div>
