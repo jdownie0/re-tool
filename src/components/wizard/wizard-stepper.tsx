@@ -14,6 +14,8 @@ const LABELS: Record<WizardStep, string> = {
   review: "Review",
 };
 
+const EXPORT_LABEL = "Share";
+
 type Props = {
   projectId: string;
 };
@@ -21,6 +23,8 @@ type Props = {
 export function WizardStepper({ projectId }: Props) {
   const pathname = usePathname();
   const base = `/app/projects/${projectId}/wizard`;
+  const exportHref = `${base}/export`;
+  const onExport = pathname === exportHref || pathname.endsWith("/wizard/export");
 
   return (
     <nav
@@ -46,6 +50,17 @@ export function WizardStepper({ projectId }: Props) {
             </li>
           );
         })}
+        <li>
+          <Link
+            href={exportHref}
+            className={cn(
+              "text-muted-foreground inline-block border-b-2 border-transparent px-1 py-3 text-sm font-medium transition-colors",
+              onExport && "text-foreground border-foreground",
+            )}
+          >
+            {EXPORT_LABEL}
+          </Link>
+        </li>
       </ol>
     </nav>
   );
