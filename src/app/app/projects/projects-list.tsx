@@ -89,7 +89,7 @@ export function ProjectsList({ projects, coverUrls }: Props) {
           No projects yet
         </p>
         <p className="mt-1 text-sm text-[var(--app-muted)]">
-          Use <span className="font-medium text-[var(--app-accent)]">Create New Project</span>{" "}
+          Use <span className="font-medium text-[var(--app-accent)]">Create Media</span>{" "}
           above to start a listing video.
         </p>
       </div>
