@@ -265,181 +265,166 @@ export function PhotosStep({
     [count, required],
   );
 
-  return (
-    <div className="flex flex-col gap-8">
-      <div>
-        <h2 className="text-lg font-semibold tracking-tight">Photos & listing</h2>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Choose video length, add optional listing link, then upload photos.
-        </p>
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="listing-title">Listing title</Label>
-        <Input
-          id="listing-title"
-          placeholder="e.g. 123 Main St — City"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          onBlur={onBlurListingTitle}
-          disabled={busy}
-        />
-      </div>
-
-      <div>
-        <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
-          Video duration
-        </p>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          {DURATION_OPTIONS.map((opt) => {
-            const active = duration === opt.seconds;
-            return (
-              <button
-                key={opt.seconds}
-                type="button"
-                disabled={busy}
-                onClick={() => onDuration(opt.seconds)}
-                className={cn(
-                  "rounded-lg border px-4 py-3 text-left text-sm transition-colors",
-                  active
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-card hover:bg-muted/60",
-                )}
-              >
-                <div className="font-semibold">{opt.label}</div>
-                <div className={cn("text-xs", active ? "opacity-90" : "text-muted-foreground")}>
-                  {opt.photos} photos
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="listing-url">Property listing (optional)</Label>
-        <div className="flex gap-2">
-          <Input
-            id="listing-url"
-            className="min-w-0 flex-1"
-            placeholder="Zillow / Redfin / other listing URL"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            onBlur={onBlurListingUrl}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                void onFetchDetails();
+  const propertyTable =
+    details != null ? (
+      <div className="mt-3 overflow-hidden rounded-lg border border-[color-mix(in_oklab,var(--app-accent)_22%,var(--app-border))] bg-[var(--app-card)]">
+        <table className="w-full text-sm">
+          <tbody className="divide-y divide-[var(--app-border)]">
+            <DetailRow label="Address" value={details.address ?? "—"} />
+            <DetailRow label="Price" value={formatPrice(details.price)} />
+            <DetailRow
+              label="Beds / baths"
+              value={
+                details.beds != null || details.baths != null
+                  ? `${details.beds ?? "—"} bd / ${details.baths ?? "—"} ba`
+                  : "—"
               }
-            }}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="shrink-0"
-            disabled={busy || !canFetch}
-            onClick={() => void onFetchDetails()}
-            aria-label="Fetch listing details"
-            title="Fetch listing details"
-          >
-            <CloudDownload className="size-4" aria-hidden />
-          </Button>
-        </div>
-
-        {details ? (
-          <div className="mt-3 overflow-hidden rounded-lg border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-muted/50 border-b">
-                  <th
-                    scope="col"
-                    className="text-muted-foreground w-[38%] px-3 py-2 text-left text-xs font-medium tracking-wide uppercase"
-                  >
-                    Field
-                  </th>
-                  <th
-                    scope="col"
-                    className="text-muted-foreground px-3 py-2 text-left text-xs font-medium tracking-wide uppercase"
-                  >
-                    Value
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                <DetailRow label="Address" value={details.address ?? "—"} />
-                <DetailRow label="Price" value={formatPrice(details.price)} />
-                <DetailRow
-                  label="Beds / baths"
-                  value={
-                    details.beds != null || details.baths != null
-                      ? `${details.beds ?? "—"} bd / ${details.baths ?? "—"} ba`
-                      : "—"
-                  }
-                />
-                <DetailRow
-                  label="Sq ft"
-                  value={details.sqft != null ? String(details.sqft) : "—"}
-                />
-                <DetailRow
-                  label="Year built"
-                  value={details.year_built != null ? String(details.year_built) : "—"}
-                />
-                <DetailRow
-                  label="Neighborhood"
-                  value={details.neighborhood_summary ?? "—"}
-                  multiline
-                />
-                <DetailRow label="Features" value={formatFeatures(details.features)} multiline />
-              </tbody>
-            </table>
-            {details.warning ? (
-              <p className="text-destructive border-t px-3 py-2 text-xs">{details.warning}</p>
-            ) : null}
-          </div>
+            />
+            <DetailRow label="Sq ft" value={details.sqft != null ? String(details.sqft) : "—"} />
+            <DetailRow
+              label="Year built"
+              value={details.year_built != null ? String(details.year_built) : "—"}
+            />
+            <DetailRow
+              label="Neighborhood"
+              value={details.neighborhood_summary ?? "—"}
+              multiline
+            />
+            <DetailRow label="Features" value={formatFeatures(details.features)} multiline />
+          </tbody>
+        </table>
+        {details.warning ? (
+          <p className="text-destructive border-t border-[var(--app-border)] px-3 py-2 text-xs">
+            {details.warning}
+          </p>
         ) : null}
       </div>
+    ) : null;
 
-      <div>
-        <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
+  return (
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-10 xl:gap-12">
+      {/* Left: listing controls */}
+      <div className="flex min-w-0 flex-col gap-8">
+        <div>
+          <h2 className="font-[family-name:var(--font-app-heading)] text-xl font-semibold tracking-tight md:text-2xl">
+            Photos & listing
+          </h2>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Paste a Zillow URL to pull property details, choose video length, then upload photos.
+          </p>
+        </div>
+
+        <div className="grid gap-2">
+          <Label htmlFor="listing-title">Listing title</Label>
+          <Input
+            id="listing-title"
+            placeholder="e.g. 123 Main St — City"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onBlur={onBlurListingTitle}
+            disabled={busy}
+            className="rounded-none border-0 border-b-2 border-[var(--app-accent)] bg-transparent px-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          />
+        </div>
+
+        <div>
+          <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-[0.18em] uppercase">
+            Video duration
+          </p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {DURATION_OPTIONS.map((opt) => {
+              const active = duration === opt.seconds;
+              return (
+                <button
+                  key={opt.seconds}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => onDuration(opt.seconds)}
+                  className={cn(
+                    "rounded-lg border-2 px-4 py-3 text-left text-sm transition-colors",
+                    active
+                      ? "border-[var(--app-accent)] bg-[var(--app-accent)] text-white shadow-sm"
+                      : "border-[var(--app-accent)] bg-transparent hover:bg-[color-mix(in_oklab,var(--app-accent)_6%,transparent)]",
+                  )}
+                >
+                  <div className="font-semibold">{opt.label}</div>
+                  <div
+                    className={cn(
+                      "text-xs",
+                      active ? "text-white/90" : "text-muted-foreground",
+                    )}
+                  >
+                    {opt.photos} photos
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="grid gap-2">
+          <p className="text-muted-foreground text-xs font-semibold tracking-[0.18em] uppercase">
+            Property listing (optional)
+          </p>
+          <Label htmlFor="listing-url">Zillow listing URL</Label>
+          <p className="text-muted-foreground text-xs">
+            Optional — other listing sites may work if the scraper supports them.
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+            <Input
+              id="listing-url"
+              className="min-w-0 flex-1"
+              placeholder="https://www.zillow.com/homedetails/…"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              onBlur={onBlurListingUrl}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void onFetchDetails();
+                }
+              }}
+              disabled={busy}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              className="inline-flex shrink-0 items-center gap-2 border-2 border-[var(--app-accent)] bg-transparent sm:min-w-[7.5rem] hover:bg-[color-mix(in_oklab,var(--app-accent)_8%,transparent)]"
+              disabled={busy || !canFetch}
+              onClick={() => void onFetchDetails()}
+            >
+              <CloudDownload className="size-4" aria-hidden />
+              Fetch
+            </Button>
+          </div>
+          {propertyTable}
+        </div>
+      </div>
+
+      {/* Right: photos */}
+      <div className="flex min-w-0 flex-col gap-3 lg:pt-1">
+        <p className="text-[var(--app-muted)] text-[10px] font-bold tracking-[0.22em] uppercase sm:text-xs">
           Listing photos
         </p>
-        <label
-          className={cn(
-            "flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed py-12 transition-colors",
-            "hover:bg-muted/40",
-            busy && "pointer-events-none opacity-60",
-          )}
-        >
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            multiple
-            className="sr-only"
-            disabled={busy}
-            onChange={(e) => void onFiles(e.target.files, e.currentTarget)}
-          />
-          <span className="text-sm font-medium">Drop photos here or click to upload</span>
-          <span className="text-muted-foreground mt-1 text-xs">JPG, PNG, WebP</span>
-        </label>
+
         {photos.length > 0 ? (
           <ul
-            className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-5 md:grid-cols-6"
+            className="grid grid-cols-4 gap-2"
             aria-label="Uploaded photos"
           >
             {photos.map((p) => (
               <li
                 key={p.id}
-                className="bg-muted relative aspect-square overflow-hidden rounded-md border"
+                className="relative aspect-square overflow-hidden rounded-lg border border-[var(--app-accent)] bg-[color-mix(in_oklab,var(--app-canvas)_80%,white)]"
               >
                 <button
                   type="button"
                   disabled={busy || deletingId === p.id}
                   onClick={() => void onRemovePhoto(p.id)}
-                  className="bg-background/90 text-muted-foreground hover:bg-destructive/15 hover:text-destructive absolute top-1 right-1 z-10 flex size-7 items-center justify-center rounded-full border shadow-sm transition-colors disabled:opacity-50"
+                  className="absolute top-1 right-1 z-10 flex size-6 items-center justify-center rounded-full bg-[var(--app-accent)] text-white shadow-sm transition-[filter] hover:brightness-110 disabled:opacity-50"
                   aria-label="Remove photo"
                 >
-                  <X className="size-3.5" aria-hidden />
+                  <X className="size-3.5 stroke-[2.5]" aria-hidden />
                 </button>
                 {photoUrls[p.id] ? (
                   // eslint-disable-next-line @next/next/no-img-element -- signed Supabase URLs; dynamic host
@@ -457,20 +442,53 @@ export function PhotosStep({
             ))}
           </ul>
         ) : null}
-        <p className="text-muted-foreground mt-2 text-sm">{hint}</p>
+
+        <label
+          className={cn(
+            "flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-[var(--app-accent)] py-10 transition-colors",
+            "hover:bg-[color-mix(in_oklab,var(--app-accent)_5%,transparent)]",
+            busy && "pointer-events-none opacity-60",
+          )}
+        >
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            className="sr-only"
+            disabled={busy}
+            onChange={(e) => void onFiles(e.target.files, e.currentTarget)}
+          />
+          <span className="text-sm font-medium text-[var(--app-accent)]">
+            Drop photos here or click to upload
+          </span>
+          <span className="text-muted-foreground mt-1 text-xs">JPG, PNG, WebP</span>
+        </label>
+
+        <p className="text-muted-foreground text-sm">{hint}</p>
       </div>
 
       {error ? (
-        <p className="text-destructive text-sm" role="alert">
+        <p className="text-destructive lg:col-span-2 text-sm" role="alert">
           {error}
         </p>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Button type="button" disabled={!canContinue || busy} onClick={onContinue}>
+      <div className="flex flex-wrap items-center justify-end gap-4 lg:col-span-2">
+        <Button
+          type="button"
+          disabled={!canContinue || busy}
+          onClick={onContinue}
+          className="bg-[var(--app-accent)] px-6 text-white hover:brightness-105 disabled:opacity-50"
+        >
           Continue to voiceover
         </Button>
-        <Link href="/app/projects" className={cn(buttonVariants({ variant: "ghost" }))}>
+        <Link
+          href="/app/projects"
+          className={cn(
+            buttonVariants({ variant: "ghost" }),
+            "text-[var(--app-accent)] hover:bg-[color-mix(in_oklab,var(--app-accent)_8%,transparent)] hover:text-[var(--app-accent)]",
+          )}
+        >
           All projects
         </Link>
       </div>
@@ -491,13 +509,13 @@ function DetailRow({
     <tr>
       <th
         scope="row"
-        className="text-muted-foreground bg-muted/20 px-3 py-2 text-left align-top text-xs font-medium"
+        className="w-[38%] bg-[color-mix(in_oklab,var(--app-canvas)_40%,white)] px-3 py-2.5 text-left align-top text-xs font-semibold text-[var(--app-accent)]"
       >
         {label}
       </th>
       <td
         className={cn(
-          "px-3 py-2 align-top",
+          "px-3 py-2.5 align-top text-sm text-[var(--app-foreground)]",
           multiline ? "whitespace-pre-wrap break-words" : "",
         )}
       >

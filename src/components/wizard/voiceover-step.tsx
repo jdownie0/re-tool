@@ -288,150 +288,142 @@ export function VoiceoverStep({
         ) : null}
       </div>
 
-      <div className="grid max-w-4xl gap-3">
-        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-          <Label className="text-base">Voice</Label>
-          {!elevenLabsConfigured ? (
-            <p className="text-muted-foreground text-xs">
-              Add <code className="text-foreground/90">ELEVEN_LABS_KEY_ID</code> for the full voice
-              list and audio previews.
-            </p>
-          ) : null}
-        </div>
-
-        <div className="border-border overflow-hidden rounded-lg border">
-          <div className="max-h-[min(70vh,28rem)] overflow-auto">
-            <table className="w-full min-w-[20rem] table-fixed border-collapse text-sm">
-              <thead>
-                <tr className="bg-muted/60 border-b">
-                  <th className="w-12 px-3 py-2.5 text-left font-medium" scope="col">
-                    <span className="sr-only">Selected</span>
-                  </th>
-                  <th className="px-3 py-2.5 text-left font-medium" scope="col">
-                    Voice
-                  </th>
-                  <th className="w-36 px-3 py-2.5 text-right font-medium" scope="col">
-                    Preview
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {voiceOptions.map((row) => {
-                  const selected = preset === row.id;
-                  const canPreview =
-                    elevenLabsConfigured && canPreviewThisVoice(row.id);
-                  const isLoading = previewLoadingId === row.id;
-                  const isPlaying = previewPlayingId === row.id;
-                  return (
-                    <tr
-                      key={row.id}
-                      className={cn(
-                        "border-b transition-colors last:border-0",
-                        selected ? "bg-primary/[0.06]" : "hover:bg-muted/40",
-                      )}
-                    >
-                      <td className="px-3 py-2 align-middle">
-                        <input
-                          type="radio"
-                          name={`voice-${projectId}`}
-                          className="size-4 accent-primary"
-                          checked={selected}
-                          onChange={() => void onPresetChange(row.id)}
-                          aria-label={`Select ${row.name}`}
-                        />
-                      </td>
-                      <td className="px-3 py-2 align-middle">
-                        <button
-                          type="button"
-                          className={cn(
-                            "w-full truncate text-left",
-                            selected ? "font-medium" : "",
-                          )}
-                          title={row.label}
-                          onClick={() => void onPresetChange(row.id)}
-                        >
-                          {row.name}
-                        </button>
-                      </td>
-                      <td className="px-3 py-2 text-right align-middle">
-                        <Button
-                          type="button"
-                          variant={isPlaying ? "secondary" : "outline"}
-                          size="sm"
-                          className="gap-1.5"
-                          disabled={!canPreview || isLoading}
-                          onClick={() => onPreviewButtonClick(row)}
-                          title={
-                            canPreview
-                              ? isPlaying
-                                ? "Stop playback"
-                                : "Play preview instructions"
-                              : "Requires Eleven Labs voices"
-                          }
-                          aria-label={
-                            isPlaying
-                              ? `Stop preview for ${row.name}`
-                              : `Preview voice ${row.name}`
-                          }
-                        >
-                          {isLoading ? (
-                            <Loader2 className="size-3.5 shrink-0 animate-spin" />
-                          ) : isPlaying ? (
-                            <Square className="size-3.5 shrink-0" />
-                          ) : (
-                            <Volume2 className="size-3.5 shrink-0" />
-                          )}
-                          {isPlaying ? "Stop" : "Preview"}
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-start">
+        <div className="grid gap-2 lg:pt-1">
+          <div className="grid gap-2">
+            <Label htmlFor="script" className="text-base">
+              Script
+            </Label>
+            <Textarea
+              id="script"
+              rows={10}
+              value={script}
+              onChange={(e) => setScript(e.target.value)}
+              onBlur={onScriptBlur}
+              placeholder="Describe the property in a natural voiceover style..."
+              className="min-h-[220px] resize-y"
+            />
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-muted-foreground">{words} words</span>
+              {lengthOk ? (
+                <span className="text-emerald-600 dark:text-emerald-400">Good length range</span>
+              ) : (
+                <span className="text-muted-foreground">{targetHint}</span>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              type="button"
+              disabled={busy || !openaiConfigured || !hasListingContext}
+              onClick={generateScriptFromListing}
+            >
+              Generate script from listing
+            </Button>
           </div>
         </div>
-      </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor="script">Script</Label>
-        <Textarea
-          id="script"
-          rows={8}
-          value={script}
-          onChange={(e) => setScript(e.target.value)}
-          onBlur={onScriptBlur}
-          placeholder="Describe the property in a natural voiceover style..."
-          className="min-h-[180px] resize-y"
-        />
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-muted-foreground">{words} words</span>
-          {lengthOk ? (
-            <span className="text-emerald-600 dark:text-emerald-400">Good length range</span>
-          ) : (
-            <span className="text-muted-foreground">{targetHint}</span>
-          )}
-        </div>
-      </div>
+        <div className="grid gap-3">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <Label className="text-base">Voice</Label>
+            {!elevenLabsConfigured ? (
+              <p className="text-muted-foreground text-xs">
+                Add <code className="text-foreground/90">ELEVEN_LABS_KEY_ID</code> for the full
+                voice list and audio previews.
+              </p>
+            ) : null}
+          </div>
 
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap gap-3">
-          <Button
-            type="button"
-            disabled={busy || !openaiConfigured || !hasListingContext}
-            onClick={generateScriptFromListing}
-          >
-            Generate script from listing
-          </Button>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <Button
-            type="button"
-            disabled={busy || !canGenerateVoiceover}
-            onClick={generateVoice}
-          >
-            {voiceoverAudioUrl ? "Regenerate Voice over" : "Generate Voice over"}
-          </Button>
+          <div className="border-border overflow-hidden rounded-lg border">
+            <div className="max-h-[min(70vh,28rem)] overflow-auto">
+              <table className="w-full min-w-[20rem] table-fixed border-collapse text-sm">
+                <colgroup>
+                  <col className="w-12" />
+                  <col />
+                  <col className="w-36" />
+                </colgroup>
+                <tbody>
+                  {voiceOptions.map((row) => {
+                    const selected = preset === row.id;
+                    const canPreview = elevenLabsConfigured && canPreviewThisVoice(row.id);
+                    const isLoading = previewLoadingId === row.id;
+                    const isPlaying = previewPlayingId === row.id;
+                    return (
+                      <tr
+                        key={row.id}
+                        className={cn(
+                          "border-b transition-colors last:border-0",
+                          selected ? "bg-primary/[0.06]" : "hover:bg-muted/40",
+                        )}
+                      >
+                        <td className="px-3 py-2 align-middle">
+                          <input
+                            type="radio"
+                            name={`voice-${projectId}`}
+                            className="size-4 accent-primary"
+                            checked={selected}
+                            onChange={() => void onPresetChange(row.id)}
+                            aria-label={`Select ${row.name}`}
+                          />
+                        </td>
+                        <td className="px-3 py-2 align-middle">
+                          <button
+                            type="button"
+                            className={cn("w-full truncate text-left", selected ? "font-medium" : "")}
+                            title={row.label}
+                            onClick={() => void onPresetChange(row.id)}
+                          >
+                            {row.name}
+                          </button>
+                        </td>
+                        <td className="px-3 py-2 text-right align-middle">
+                          <Button
+                            type="button"
+                            variant={isPlaying ? "secondary" : "outline"}
+                            size="sm"
+                            className="gap-1.5"
+                            disabled={!canPreview || isLoading}
+                            onClick={() => onPreviewButtonClick(row)}
+                            title={
+                              canPreview
+                                ? isPlaying
+                                  ? "Stop playback"
+                                  : "Play preview instructions"
+                                : "Requires Eleven Labs voices"
+                            }
+                            aria-label={
+                              isPlaying
+                                ? `Stop preview for ${row.name}`
+                                : `Preview voice ${row.name}`
+                            }
+                          >
+                            {isLoading ? (
+                              <Loader2 className="size-3.5 shrink-0 animate-spin" />
+                            ) : isPlaying ? (
+                              <Square className="size-3.5 shrink-0" />
+                            ) : (
+                              <Volume2 className="size-3.5 shrink-0" />
+                            )}
+                            {isPlaying ? "Stop" : "Preview"}
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <Button
+              type="button"
+              disabled={busy || !canGenerateVoiceover}
+              onClick={generateVoice}
+            >
+              {voiceoverAudioUrl ? "Regenerate Voice over" : "Generate Voice over"}
+            </Button>
+          </div>
         </div>
       </div>
 
