@@ -1,4 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
+import {
+  createSupabaseFetch,
+  getSupabaseHttpTimeoutMs,
+} from "@/lib/supabase/supabase-fetch";
 
 /**
  * Server-only Supabase client with service role. Use in webhooks and trusted server code only.
@@ -13,6 +17,9 @@ export function createAdminClient() {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
+    },
+    global: {
+      fetch: createSupabaseFetch(getSupabaseHttpTimeoutMs()),
     },
   });
 }
