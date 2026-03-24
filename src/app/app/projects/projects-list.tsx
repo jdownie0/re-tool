@@ -18,6 +18,7 @@ type ProjectRow = {
 type Props = {
   projects: ProjectRow[];
   coverUrls: Record<string, string>;
+  hasFinalRender: Record<string, boolean>;
 };
 
 /** Strip trailing "Listing Video" (any casing) from display titles. */
@@ -27,7 +28,16 @@ function displayProjectTitle(raw: string): string {
   return stripped.length > 0 ? stripped : t;
 }
 
-function statusPresentation(status: string): { label: string; className: string } {
+function statusPresentation(
+  status: string,
+  isFinalRenderReady: boolean,
+): { label: string; className: string } {
+  if (isFinalRenderReady) {
+    return {
+      label: "Completed",
+      className: "font-medium text-[oklch(0.52_0.04_145)]",
+    };
+  }
   switch (status) {
     case "ready":
       return {
@@ -53,7 +63,7 @@ function statusPresentation(status: string): { label: string; className: string 
   }
 }
 
-export function ProjectsList({ projects, coverUrls }: Props) {
+export function ProjectsList({ projects, coverUrls, hasFinalRender }: Props) {
   const router = useRouter();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -100,7 +110,7 @@ export function ProjectsList({ projects, coverUrls }: Props) {
     <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {projects.map((p) => {
         const cover = coverUrls[p.id];
-        const st = statusPresentation(p.status);
+        const st = statusPresentation(p.status, Boolean(hasFinalRender[p.id]));
         const created = new Date(p.created_at);
 
         const cardTitle = displayProjectTitle(p.title);
@@ -136,7 +146,7 @@ export function ProjectsList({ projects, coverUrls }: Props) {
                 )}
               </div>
 
-              <p className="mt-3 flex flex-wrap items-center gap-x-1 text-xs text-[var(--app-muted)]">
+              <p className="mt-3 flex flex-nowrap items-center gap-x-1 whitespace-nowrap text-xs text-[var(--app-muted)]">
                 <Clock className="mr-0.5 size-3.5 shrink-0 stroke-[1.25]" aria-hidden />
                 <span>
                   Created:{" "}

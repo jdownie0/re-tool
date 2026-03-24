@@ -40,6 +40,7 @@ export default async function ProjectsPage() {
   const projectIds = list.map((p) => p.id);
 
   const coverUrls: Record<string, string> = {};
+  const hasFinalRender: Record<string, boolean> = {};
 
   if (projectIds.length > 0) {
     const { data: photos } = await supabase
@@ -59,6 +60,18 @@ export default async function ProjectsPage() {
         }
       }),
     );
+
+    const { data: renders } = await supabase
+      .from("project_assets")
+      .select("project_id")
+      .in("project_id", projectIds)
+      .eq("type", "final_render");
+
+    for (const row of renders ?? []) {
+      if (row.project_id) {
+        hasFinalRender[row.project_id] = true;
+      }
+    }
   }
 
   return (
@@ -72,7 +85,7 @@ export default async function ProjectsPage() {
         </p>
       </header>
 
-      <ProjectsList projects={list} coverUrls={coverUrls} />
+      <ProjectsList projects={list} coverUrls={coverUrls} hasFinalRender={hasFinalRender} />
     </div>
   );
 }
