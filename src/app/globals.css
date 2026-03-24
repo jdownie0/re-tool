@@ -117,6 +117,21 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* In-app shell: cream canvas, tan accents, sans headings via root font variables. */
+.app-chrome {
+  --app-canvas: oklch(0.97 0.012 85);
+  --app-sidebar: oklch(0.99 0.008 90);
+  --app-header: oklch(0.995 0.006 90 / 0.97);
+  --app-card: oklch(1 0 0);
+  --app-accent: oklch(0.58 0.09 64);
+  --app-accent-soft: oklch(0.58 0.09 64 / 0.12);
+  --app-foreground: oklch(0.28 0.02 48);
+  --app-muted: oklch(0.5 0.02 55);
+  --app-border: oklch(0.9 0.02 78);
+  --app-success: oklch(0.48 0.06 155);
+  --font-app-heading: var(--font-dm-sans), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
