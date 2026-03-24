@@ -1,8 +1,7 @@
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
-import { AppSidebar } from "@/components/app-sidebar";
-import { UserMenu } from "@/components/user-menu";
 import { createClient } from "@/lib/supabase/server";
+import { AppShellHeader } from "@/components/app-shell/app-shell-header";
+import { AppShellSidebar } from "@/components/app-shell/app-shell-sidebar";
+import { CreateProjectButton } from "@/components/app-shell/create-project-button";
 
 export default async function AppAreaLayout({
   children,
@@ -21,21 +20,18 @@ export default async function AppAreaLayout({
     .single();
 
   return (
-    <SidebarProvider className="min-h-svh">
-      <AppSidebar />
-      <SidebarInset className="flex min-h-svh flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b px-4">
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <span className="text-muted-foreground truncate text-sm">
-              Real estate video workspace
-            </span>
-          </div>
-          <UserMenu email={user?.email ?? null} displayName={profile?.display_name ?? null} />
-        </header>
-        <div className="flex flex-1 flex-col p-6">{children}</div>
-      </SidebarInset>
-    </SidebarProvider>
+    <div
+      className="app-chrome flex min-h-svh bg-[var(--app-canvas)] text-[var(--app-foreground)] antialiased"
+    >
+      <AppShellSidebar />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <AppShellHeader
+          email={user?.email ?? null}
+          displayName={profile?.display_name ?? null}
+          actions={<CreateProjectButton />}
+        />
+        <main className="flex flex-1 flex-col px-6 py-8 md:px-10">{children}</main>
+      </div>
+    </div>
   );
 }
