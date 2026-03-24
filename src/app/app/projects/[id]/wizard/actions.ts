@@ -513,7 +513,7 @@ export async function reorderProjectPhotos(projectId: string, orderedAssetIds: s
   revalidatePath(`/app/projects/${projectId}/wizard`);
 }
 
-export async function enqueueMockJob(
+export async function enqueueGenerationJob(
   projectId: string,
   kind: "script" | "voice" | "music" | "scene_video" | "compose",
   input: Record<string, unknown>,

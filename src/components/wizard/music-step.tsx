@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { MUSIC_PRESETS } from "@/lib/wizard/constants";
 import type { WizardMetadata } from "@/lib/wizard/types";
 import {
-  enqueueMockJob,
+  enqueueGenerationJob,
   generateMusicWithElevenLabs,
   setMusicSkipped,
   updateWizardMetadata,
@@ -79,7 +79,7 @@ export function MusicStep({
       if (elevenLabsConfigured) {
         await generateMusicWithElevenLabs(projectId);
       } else {
-        await enqueueMockJob(
+        await enqueueGenerationJob(
           projectId,
           "music",
           { preset: preset ?? "custom", prompt },
