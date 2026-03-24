@@ -146,13 +146,13 @@ function getSceneVideoModel(): string {
   );
 }
 
-function isMockVideoForcedEnv(): boolean {
+function isPlaceholderVideoForcedEnv(): boolean {
   const v = process.env.USE_MOCK_VIDEO?.toLowerCase();
   return v === "1" || v === "true" || v === "yes";
 }
 
 export function shouldProcessSceneVideoWithFal(): boolean {
-  if (isMockVideoForcedEnv()) return false;
+  if (isPlaceholderVideoForcedEnv()) return false;
   return Boolean(process.env.FAL_AI_KEY?.trim());
 }
 

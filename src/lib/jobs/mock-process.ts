@@ -10,10 +10,10 @@ import { finalRenderStorageObjectPath } from "@/lib/storage/final-render-key";
 import { mergeWizardMetadata } from "@/lib/wizard/metadata";
 
 /**
- * Mock final export: copies only the **first** scene clip into `renders` (no FFmpeg).
+ * Preview final export: copies only the **first** scene clip into `renders` (no FFmpeg).
  * Full multi-clip concat, voice, music, and captions require FFmpeg on the server — see `compose-video` / `ENABLE_COMPOSE`.
  */
-async function finalizeMockCompose(
+async function finalizePreviewCompose(
   supabase: SupabaseClient,
   projectId: string,
 ): Promise<Record<string, unknown>> {
@@ -25,7 +25,7 @@ async function finalizeMockCompose(
 
   if (projErr || !project) {
     return {
-      note: "Mock compose — project not found.",
+      note: "Compose — project not found.",
       finalUrl: null,
     };
   }
@@ -39,14 +39,14 @@ async function finalizeMockCompose(
 
   if (clipErr) {
     return {
-      note: `Mock compose — could not load clips: ${clipErr.message}`,
+      note: `Compose — could not load clips: ${clipErr.message}`,
       finalUrl: null,
     };
   }
 
   if (!clips?.length) {
     return {
-      note: "Mock compose — add scene clips before exporting.",
+      note: "Compose — add scene clips before exporting.",
       finalUrl: null,
     };
   }
@@ -58,7 +58,7 @@ async function finalizeMockCompose(
 
   if (dlErr || !blob) {
     return {
-      note: `Mock compose — could not read clip: ${dlErr?.message ?? "download failed"}`,
+      note: `Compose — could not read clip: ${dlErr?.message ?? "download failed"}`,
       finalUrl: null,
     };
   }
@@ -70,7 +70,7 @@ async function finalizeMockCompose(
   if (buf.byteLength > maxUploadBytes) {
     return {
       note:
-        `Mock compose — final file is ${formatBytesHuman(buf.byteLength)} (max ${formatBytesHuman(maxUploadBytes)}). ` +
+        `Compose — final file is ${formatBytesHuman(buf.byteLength)} (max ${formatBytesHuman(maxUploadBytes)}). ` +
         "Raise Storage limit in Dashboard and RETOOL_MAX_RENDER_UPLOAD_BYTES, or shorten clips.",
       finalUrl: null,
     };
@@ -90,7 +90,7 @@ async function finalizeMockCompose(
     const detail = formatStorageClientError(upErr);
     return {
       note:
-        `Mock compose — could not upload final file: ${detail}.${renderUploadErrorHint(detail)}`,
+        `Compose — could not upload final file: ${detail}.${renderUploadErrorHint(detail)}`,
       finalUrl: null,
     };
   }
@@ -134,17 +134,17 @@ async function finalizeMockCompose(
   return {
     note:
       n > 1
-        ? `Mock export: only the first of ${n} clips was copied (FFmpeg not available or ENABLE_COMPOSE=0). Install ffmpeg on the server; leave ENABLE_COMPOSE unset for auto-detect, or set to 1 — then you get all clips, voice, music, and optional burned captions.`
-        : "Mock export: single clip preview. Install ffmpeg for full concat, voice mux, music, and captions.",
+        ? `Export: only the first of ${n} clips was copied (FFmpeg not available or ENABLE_COMPOSE=0). Install ffmpeg on the server; leave ENABLE_COMPOSE unset for auto-detect, or set to 1 — then you get all clips, voice, music, and optional burned captions.`
+        : "Export: single clip preview. Install ffmpeg for full concat, voice mux, music, and captions.",
     storage_path: outPath,
     final_asset_id: assetRow.id,
   };
 }
 
 /**
- * Synchronously completes a queued generation job with mock outputs (no external AI).
+ * Synchronously completes a queued generation job with placeholder outputs (no external AI).
  */
-export async function processMockGenerationJob(
+export async function processSyncGenerationJob(
   supabase: SupabaseClient,
   jobId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -177,7 +177,7 @@ export async function processMockGenerationJob(
       const draft =
         typeof input.scriptDraft === "string" && input.scriptDraft.trim()
           ? input.scriptDraft
-          : `Welcome to your listing. This is placeholder copy generated in mock mode. ` +
+          : `Welcome to your listing. This is placeholder copy for preview. ` +
             `Highlight square footage, recent updates, and neighborhood appeal. ` +
             `Replace this text anytime before final render.`;
       output = {
@@ -205,12 +205,12 @@ export async function processMockGenerationJob(
       break;
     }
     case "scene_video": {
-      output = { ...output, clipUrls: [], note: "Mock scene clips — no video bytes." };
+      output = { ...output, clipUrls: [], note: "Scene clips — no video bytes (add Fal credentials for real clips)." };
       break;
     }
     case "compose": {
-      const mockFinal = await finalizeMockCompose(supabase, job.project_id);
-      output = { ...output, finalUrl: null, ...mockFinal };
+      const previewFinal = await finalizePreviewCompose(supabase, job.project_id);
+      output = { ...output, finalUrl: null, ...previewFinal };
       break;
     }
     default:
