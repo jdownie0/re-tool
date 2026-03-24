@@ -453,11 +453,14 @@ export function ReviewStep({
       <div>
         <h2 className="text-lg font-semibold tracking-tight">Final review</h2>
         <p className="text-muted-foreground mt-1 text-sm">
-          Each scene clip can take up to about two minutes. Use{" "}
-          <span className="font-medium text-foreground">Scene video jobs</span> below for status while
-          they run; when clips are ready, export your{" "}
-          <span className="font-medium text-foreground">final video</span> in the section after that.
-          If a job failed, use <span className="font-medium text-foreground">Retry failed clips</span>.
+          Each scene clip may take up to ~2 minutes to process. You can check progress in the{" "}
+          <span className="font-medium text-foreground">Scene Video Jobs</span> section below while
+          clips are being created. Once everything is ready, export your{" "}
+          <span className="font-medium text-foreground">final video</span> in the section that follows.
+          <br />
+          <br />
+          If any clips fail, simply click{" "}
+          <span className="font-medium text-foreground">Retry Failed Clips</span> to run them again.
         </p>
       </div>
 
@@ -556,101 +559,105 @@ export function ReviewStep({
         </div>
       </section>
 
-      <section className="space-y-2">
-        <h3 className="text-sm font-medium tracking-wide uppercase">Script</h3>
-        <p className="text-muted-foreground text-sm leading-relaxed">{scriptPreview || "—"}</p>
-      </section>
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-start">
+        <div className="space-y-6">
+          <section className="space-y-2">
+            <h3 className="text-sm font-medium tracking-wide uppercase">Script</h3>
+            <p className="text-muted-foreground text-sm leading-relaxed">{scriptPreview || "—"}</p>
+          </section>
 
-      <section className="space-y-2">
-        <h3 className="text-sm font-medium tracking-wide uppercase">Scene video jobs</h3>
-        <ul className="text-muted-foreground space-y-2 text-xs">
-          {sceneJobs.length === 0 ? (
-            <li>
-              {everyPhotoHasClip
-                ? "All scene clips finished successfully."
-                : videoClips.length > 0
-                  ? "Some clips are ready. Generate any missing scenes if needed."
-                  : "No video jobs yet — generate clips first."}
-            </li>
+          <section className="space-y-2">
+            <h3 className="text-sm font-medium tracking-wide uppercase">Scene video jobs</h3>
+            <ul className="text-muted-foreground space-y-2 text-xs">
+              {sceneJobs.length === 0 ? (
+                <li>
+                  {everyPhotoHasClip
+                    ? "All scene clips finished successfully."
+                    : videoClips.length > 0
+                      ? "Some clips are ready. Generate any missing scenes if needed."
+                      : "No video jobs yet — generate clips first."}
+                </li>
+              ) : (
+                [...sceneJobs]
+                  .sort((a, b) => {
+                    const da = sceneIndexFromInput(a) - sceneIndexFromInput(b);
+                    if (da !== 0) return da;
+                    return a.created_at.localeCompare(b.created_at);
+                  })
+                  .map((j, i) => (
+                    <JobListRow
+                      key={j.id}
+                      title={`Video #${getVideoNumber(j, i)}`}
+                      job={j}
+                    />
+                  ))
+              )}
+            </ul>
+          </section>
+        </div>
+
+        <section className="space-y-3">
+          <h3 className="text-sm font-medium tracking-wide uppercase">Final video</h3>
+          {finalRenderUrl ? (
+            <div className="space-y-3">
+              <video
+                src={finalRenderUrl}
+                controls
+                className="aspect-video w-full rounded-md border bg-black"
+                playsInline
+              />
+              <Link
+                href={`/app/projects/${projectId}/wizard/export`}
+                className={cn(buttonVariants({ variant: "secondary" }), "inline-flex")}
+              >
+                Download &amp; share
+              </Link>
+            </div>
           ) : (
-            [...sceneJobs]
-              .sort((a, b) => {
-                const da = sceneIndexFromInput(a) - sceneIndexFromInput(b);
-                if (da !== 0) return da;
-                return a.created_at.localeCompare(b.created_at);
-              })
-              .map((j, i) => (
-                <JobListRow
-                  key={j.id}
-                  title={`Video #${getVideoNumber(j, i)}`}
-                  job={j}
-                />
-              ))
+            <p className="text-muted-foreground text-sm">
+              Export stitches your scene clips with voiceover (and optional music) into one MP4.
+            </p>
           )}
-        </ul>
-      </section>
-
-      <section className="space-y-3">
-        <h3 className="text-sm font-medium tracking-wide uppercase">Final video</h3>
-        {finalRenderUrl ? (
-          <div className="space-y-3">
-            <video
-              src={finalRenderUrl}
-              controls
-              className="aspect-video w-full max-w-lg rounded-md border bg-black"
-              playsInline
-            />
+          {composeJob?.status === "succeeded" && !finalRenderUrl ? (
+            <p className="text-muted-foreground text-xs" role="status">
+              No preview file in storage yet. Click <span className="font-medium">Re-export final video</span>{" "}
+              to generate a playable MP4 (older exports may predate this step).
+            </p>
+          ) : null}
+          {composeJob ? (
+            <ul className="space-y-2 text-xs">
+              <JobListRow title="Final render" job={composeJob} />
+            </ul>
+          ) : null}
+          <Button
+            type="button"
+            disabled={busy || !clipsReady || !!composeBusy}
+            onClick={onExportFinal}
+          >
+            {busy || composeBusy
+              ? "Rendering final video…"
+              : composeJob?.status === "succeeded"
+                ? "Re-export final video"
+                : "Export final video"}
+          </Button>
+          {!clipsReady ? (
+            <p className="text-muted-foreground text-xs">
+              Finish generating all scene clips before exporting.
+            </p>
+          ) : null}
+          <div className="flex flex-wrap gap-3 pt-1">
             <Link
-              href={`/app/projects/${projectId}/wizard/export`}
-              className={cn(buttonVariants({ variant: "secondary" }), "inline-flex")}
+              href={`/app/projects/${projectId}/wizard/music`}
+              className={cn(buttonVariants({ variant: "outline" }))}
             >
-              Download &amp; share
+              Back
+            </Link>
+            <Link href="/app/projects" className={cn(buttonVariants({ variant: "ghost" }))}>
+              All projects
             </Link>
           </div>
-        ) : (
-          <p className="text-muted-foreground text-sm">
-            Export stitches your scene clips with voiceover (and optional music) into one MP4.
-          </p>
-        )}
-        {composeJob?.status === "succeeded" && !finalRenderUrl ? (
-          <p className="text-muted-foreground text-xs" role="status">
-            No preview file in storage yet. Click <span className="font-medium">Re-export final video</span>{" "}
-            to generate a playable MP4 (older exports may predate this step).
-          </p>
-        ) : null}
-        {composeJob ? (
-          <ul className="space-y-2 text-xs">
-            <JobListRow title="Final render" job={composeJob} />
-          </ul>
-        ) : null}
-        <Button
-          type="button"
-          disabled={busy || !clipsReady || !!composeBusy}
-          onClick={onExportFinal}
-        >
-          {busy || composeBusy
-            ? "Rendering final video…"
-            : composeJob?.status === "succeeded"
-              ? "Re-export final video"
-              : "Export final video"}
-        </Button>
-        {!clipsReady ? (
-          <p className="text-muted-foreground text-xs">
-            Finish generating all scene clips before exporting.
-          </p>
-        ) : null}
-        <div className="flex flex-wrap gap-3 pt-1">
-          <Link
-            href={`/app/projects/${projectId}/wizard/music`}
-            className={cn(buttonVariants({ variant: "outline" }))}
-          >
-            Back
-          </Link>
-          <Link href="/app/projects" className={cn(buttonVariants({ variant: "ghost" }))}>
-            All projects
-          </Link>
-        </div>
-      </section>
+        </section>
+      </div>
 
       {error ? (
         <p className="text-destructive text-sm" role="alert">
