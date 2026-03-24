@@ -607,6 +607,141 @@ export async function enqueueSceneVideoJobs(projectId: string) {
   revalidatePath(`/app/projects/${projectId}/wizard`);
 }
 
+/** ~4.5m fits under typical 300s serverless max when each clip ~60–90s Fal time. */
+const SCENE_VIDEO_AFTER_BUDGET_MS = 270_000;
+
+/** Same budget class as scene Fal drain; FFmpeg compose + upload can be heavy. */
+const COMPOSE_AFTER_BUDGET_MS = 270_000;
+
+/**
+ * Drains queued `scene_video` jobs for this project **after** the HTTP response returns,
+ * so the browser is not held open for minutes (avoids "fetch failed" / timeouts).
+ * Prefer `SUPABASE_SERVICE_ROLE_KEY` (reliable in background); otherwise uses your session
+ * (works when `after()` retains the request context).
+ */
+export async function scheduleSceneVideoProcessing(projectId: string): Promise<void> {
+  await assertProject(projectId);
+
+  after(async () => {
+    try {
+      const supabase = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
+        ? createAdminClient()
+        : await createClient();
+      await processSceneVideoJobsUntilDeadline(supabase, {
+        deadlineMs: SCENE_VIDEO_AFTER_BUDGET_MS,
+        projectId,
+        revalidateWizardPath: `/app/projects/${projectId}/wizard`,
+      });
+    } catch (e) {
+      console.error("scheduleSceneVideoProcessing after()", e);
+    }
+  });
+}
+
+/**
+ * Drains queued `compose` jobs after the response returns (`ENABLE_COMPOSE` / FFmpeg path).
+ */
+export async function scheduleComposeProcessing(projectId: string): Promise<void> {
+  await assertProject(projectId);
+
+  after(async () => {
+    try {
+      const supabase = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
+        ? createAdminClient()
+        : await createClient();
+      await processComposeJobsUntilDeadline(supabase, {
+        deadlineMs: COMPOSE_AFTER_BUDGET_MS,
+        projectId,
+        revalidateWizardPath: `/app/projects/${projectId}/wizard`,
+      });
+    } catch (e) {
+      console.error("scheduleComposeProcessing after()", e);
+    }
+  });
+}
+
+/**
+ * Enqueues a single final-render `compose` job (idempotent per project) and kicks background processing when deferred.
+ */
+export async function enqueueFinalRender(projectId: string) {
+  const { supabase } = await assertProject(projectId);
+
+  const { data: job, error } = await supabase
+    .from("generation_jobs")
+    .insert({
+      project_id: projectId,
+      kind: "compose",
+      status: "queued",
+      idempotency_key: `compose-${projectId}`,
+      input: {},
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    if (error.code === "23505") {
+      const { data: existing } = await supabase
+        .from("generation_jobs")
+        .select("id, status")
+        .eq("project_id", projectId)
+        .eq("idempotency_key", `compose-${projectId}`)
+        .single();
+      if (existing?.id) {
+        const deferCompose = shouldDeferCompose();
+
+        if (existing.status === "running") {
+          if (deferCompose) {
+            await scheduleComposeProcessing(projectId);
+          }
+          revalidatePath(`/app/projects/${projectId}/wizard`);
+          return { ok: true as const, jobId: existing.id };
+        }
+
+        if (existing.status === "succeeded" || existing.status === "failed") {
+          await supabase
+            .from("generation_jobs")
+            .update({
+              status: "queued",
+              error: null,
+              progress: null,
+              output: null,
+            })
+            .eq("id", existing.id);
+        }
+
+        if (!deferCompose) {
+          const result = await processGenerationJob(supabase, existing.id);
+          if (!result.ok) {
+            throw new Error(result.error);
+          }
+        } else {
+          await scheduleComposeProcessing(projectId);
+        }
+        revalidatePath(`/app/projects/${projectId}/wizard`);
+        return { ok: true as const, jobId: existing.id };
+      }
+    }
+    throw new Error(error.message);
+  }
+
+  if (!job) {
+    throw new Error("Job not created");
+  }
+
+  const deferCompose = shouldDeferCompose();
+  if (!deferCompose) {
+    const result = await processGenerationJob(supabase, job.id);
+    if (!result.ok) {
+      throw new Error(result.error);
+    }
+  } else {
+    await scheduleComposeProcessing(projectId);
+  }
+
+  revalidatePath(`/app/projects/${projectId}/wizard`);
+  return { ok: true as const, jobId: job.id };
+}
+
 export async function processOneQueuedSceneVideoJob(projectId: string) {
   const { supabase } = await assertProject(projectId);
   const result = await processNextSceneVideoJob(supabase, projectId);

@@ -1,11 +1,18 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { processGenerationJob } from "@/lib/jobs/process-generation-job";
+import {
+  processComposeJobsUntilDeadline,
+  processSceneVideoJobsUntilDeadline,
+} from "@/lib/jobs/run-scene-queue";
 
 export const maxDuration = 300;
 
+/** Leave headroom under `maxDuration` (each wave is ~max clip length when parallel). */
+const CRON_TIME_BUDGET_MS = 270_000;
+
 /**
- * Processes a batch of queued `scene_video` jobs (service role). Secure with `CRON_SECRET`.
+ * Drains queued `scene_video` jobs (parallel waves, see SCENE_VIDEO_CONCURRENCY), then `compose`
+ * jobs, splitting the time budget so both can run under `maxDuration`. Secure with `CRON_SECRET`.
  */
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET?.trim();
@@ -18,35 +25,19 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const limit = Math.min(
-    10,
-    Math.max(1, Number(process.env.CRON_SCENE_JOBS_BATCH ?? "3") || 3),
-  );
-
   const admin = createAdminClient();
+  const started = Date.now();
 
-  const { data: jobs, error } = await admin
-    .from("generation_jobs")
-    .select("id")
-    .eq("kind", "scene_video")
-    .eq("status", "queued")
-    .order("created_at", { ascending: true })
-    .limit(limit);
+  const halfBudget = Math.floor(CRON_TIME_BUDGET_MS / 2);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  await processSceneVideoJobsUntilDeadline(admin, {
+    deadlineMs: halfBudget,
+  });
 
-  const processed: { id: string; ok: boolean; error?: string }[] = [];
+  await processComposeJobsUntilDeadline(admin, {
+    deadlineMs: halfBudget,
+  });
 
-  for (const row of jobs ?? []) {
-    const r = await processGenerationJob(admin, row.id);
-    processed.push({
-      id: row.id,
-      ok: r.ok,
-      error: r.ok ? undefined : r.error,
-    });
-  }
-
-  return NextResponse.json({ processed: processed.length, jobs: processed });
+  const elapsedMs = Date.now() - started;
+  return NextResponse.json({ ok: true, elapsedMs });
 }

@@ -1,7 +1,12 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { after, NextResponse } from "next/server";
+import { shouldDeferCompose } from "@/lib/jobs/compose-video";
 import { processGenerationJob } from "@/lib/jobs/process-generation-job";
+import { processComposeJobsUntilDeadline } from "@/lib/jobs/run-scene-queue";
 import { shouldProcessSceneVideoWithFal } from "@/lib/jobs/scene-video-fal";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
+
+const COMPOSE_AFTER_BUDGET_MS = 270_000;
 
 const jobKinds = new Set([
   "script",
@@ -83,12 +88,30 @@ export async function POST(request: Request) {
 
   const deferScene =
     kind === "scene_video" && shouldProcessSceneVideoWithFal();
+  const deferCompose = kind === "compose" && shouldDeferCompose();
 
-  if (!deferScene) {
+  if (!deferScene && !deferCompose) {
     const processed = await processGenerationJob(supabase, job.id);
     if (!processed.ok) {
       return NextResponse.json({ error: processed.error, job }, { status: 500 });
     }
+  }
+
+  if (deferCompose) {
+    after(async () => {
+      try {
+        const bg = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
+          ? createAdminClient()
+          : await createClient();
+        await processComposeJobsUntilDeadline(bg, {
+          deadlineMs: COMPOSE_AFTER_BUDGET_MS,
+          projectId: project_id,
+          revalidateWizardPath: `/app/projects/${project_id}/wizard`,
+        });
+      } catch (e) {
+        console.error("POST /api/jobs compose after()", e);
+      }
+    });
   }
 
   const { data: finalJob } = await supabase
