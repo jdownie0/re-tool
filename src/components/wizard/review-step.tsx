@@ -430,7 +430,7 @@ export function ReviewStep({
       if (!wait.ok) {
         throw new Error(wait.error);
       }
-      router.push(`/app/projects/${projectId}/wizard/export`);
+      router.push(`/app/videos/${projectId}/wizard/export`);
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Export failed");
@@ -607,7 +607,7 @@ export function ReviewStep({
                 playsInline
               />
               <Link
-                href={`/app/projects/${projectId}/wizard/export`}
+                href={`/app/videos/${projectId}/wizard/export`}
                 className={cn(buttonVariants({ variant: "secondary" }), "inline-flex")}
               >
                 Download &amp; share

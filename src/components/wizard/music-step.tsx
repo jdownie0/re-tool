@@ -99,7 +99,7 @@ export function MusicStep({
     setError(null);
     try {
       await setMusicSkipped(projectId, true);
-      router.push(`/app/projects/${projectId}/wizard/review`);
+      router.push(`/app/videos/${projectId}/wizard/review`);
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed");
@@ -209,12 +209,12 @@ export function MusicStep({
         <Button
           type="button"
           disabled={busy || (!wizard.musicMockReady && !wizard.musicSkipped)}
-          onClick={() => router.push(`/app/projects/${projectId}/wizard/review`)}
+          onClick={() => router.push(`/app/videos/${projectId}/wizard/review`)}
         >
           Continue to review
         </Button>
         <Link
-          href={`/app/projects/${projectId}/wizard/arrange`}
+          href={`/app/videos/${projectId}/wizard/arrange`}
           className={cn(buttonVariants({ variant: "ghost" }))}
         >
           Back

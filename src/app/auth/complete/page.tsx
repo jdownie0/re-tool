@@ -69,7 +69,7 @@ export default async function AuthCompletePage({ searchParams }: Props) {
         <p className="text-muted-foreground max-w-md text-sm">
           This purchase is already linked to a signed-in account. Open the app to continue.
         </p>
-        <Link href="/app/projects" className={cn(buttonVariants())}>
+        <Link href="/app/videos" className={cn(buttonVariants())}>
           Go to app
         </Link>
       </div>

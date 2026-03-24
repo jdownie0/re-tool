@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/app/projects";
+  const next = searchParams.get("next") ?? "/app/videos";
 
   if (!url || !anon) {
     return NextResponse.redirect(`${origin}/auth/auth-code-error`);

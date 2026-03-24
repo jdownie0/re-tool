@@ -44,7 +44,7 @@ export default async function ProjectDetailPage({ params }: Props) {
       </div>
 
       <Link
-        href={`/app/projects/${project.id}/wizard/photos`}
+        href={`/app/videos/${project.id}/wizard/photos`}
         className={cn(buttonVariants({ size: "lg" }), "w-full sm:w-auto")}
       >
         Open listing video wizard

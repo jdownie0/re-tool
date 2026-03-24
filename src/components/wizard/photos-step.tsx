@@ -251,7 +251,7 @@ export function PhotosStep({
     setError(null);
     try {
       await saveStubListingSnapshot(projectId);
-      router.push(`/app/projects/${projectId}/wizard/voiceover`);
+      router.push(`/app/videos/${projectId}/wizard/voiceover`);
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to continue");

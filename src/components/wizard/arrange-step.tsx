@@ -117,12 +117,12 @@ export function ArrangeStep({ projectId, photos: initialPhotos }: Props) {
         <Button
           type="button"
           disabled={busy}
-          onClick={() => router.push(`/app/projects/${projectId}/wizard/music`)}
+          onClick={() => router.push(`/app/videos/${projectId}/wizard/music`)}
         >
           Continue to music
         </Button>
         <Link
-          href={`/app/projects/${projectId}/wizard/voiceover`}
+          href={`/app/videos/${projectId}/wizard/voiceover`}
           className={cn(buttonVariants({ variant: "outline" }))}
         >
           Back

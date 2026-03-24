@@ -56,7 +56,7 @@ export function CompleteAccountForm({ sessionId, emailHint }: Props) {
       );
       return;
     }
-    router.push("/app/projects");
+    router.push("/app/videos");
     router.refresh();
   }
 

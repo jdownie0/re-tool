@@ -106,7 +106,7 @@ export async function POST(request: Request) {
         await processComposeJobsUntilDeadline(bg, {
           deadlineMs: COMPOSE_AFTER_BUDGET_MS,
           projectId: project_id,
-          revalidateWizardPath: `/app/projects/${project_id}/wizard`,
+          revalidateWizardPath: `/app/videos/${project_id}/wizard`,
         });
       } catch (e) {
         console.error("POST /api/jobs compose after()", e);

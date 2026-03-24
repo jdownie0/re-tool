@@ -64,13 +64,13 @@ export function AppShellSidebar() {
   const inListingVideoFlow = pathname.includes("/wizard");
   const listingVideoActive = inListingVideoFlow;
   const imagesActive = pathname.startsWith("/app/images");
-  const projectsActive = pathname.startsWith("/app/projects") && !inListingVideoFlow;
+  const videosActive = pathname.startsWith("/app/videos") && !inListingVideoFlow;
 
   return (
     <aside className="flex w-[154px] shrink-0 flex-col border-r border-[var(--app-border)] bg-[var(--app-sidebar)] max-md:w-[50px]">
       <div className="flex flex-col items-center px-2 py-6 max-md:px-1.5">
         <Link
-          href="/app/projects"
+          href="/app/videos"
           className="flex flex-col items-center gap-2 rounded-lg p-2 transition-colors hover:bg-[var(--app-accent-soft)] max-md:p-1"
           aria-label="Home"
         >
@@ -81,7 +81,7 @@ export function AppShellSidebar() {
       <nav className="flex flex-col gap-1 px-2 max-md:px-1.5" aria-label="Main">
         {inListingVideoFlow ? (
           <NavItem
-            href="/app/projects"
+            href="/app/videos"
             label="Listing Video"
             active={listingVideoActive}
             icon={<SquarePlay className="size-[18px]" aria-hidden />}

@@ -67,14 +67,14 @@ export default async function WizardStepPage({ params }: Props) {
       step === "review") &&
     photos.length === 0
   ) {
-    redirect(`/app/projects/${id}/wizard/photos`);
+    redirect(`/app/videos/${id}/wizard/photos`);
   }
 
   if (
     (step === "arrange" || step === "music" || step === "review") &&
     !wizard.voiceMockReady
   ) {
-    redirect(`/app/projects/${id}/wizard/voiceover`);
+    redirect(`/app/videos/${id}/wizard/voiceover`);
   }
 
   if (
@@ -82,7 +82,7 @@ export default async function WizardStepPage({ params }: Props) {
     !wizard.musicMockReady &&
     !wizard.musicSkipped
   ) {
-    redirect(`/app/projects/${id}/wizard/music`);
+    redirect(`/app/videos/${id}/wizard/music`);
   }
 
   const common = {

@@ -35,7 +35,7 @@ export async function startCheckoutFromPricing() {
     mode: "subscription",
     line_items: [{ price: priceId, quantity: 1 }],
     success_url: loggedIn
-      ? `${appUrl}/app/projects?checkout=success`
+      ? `${appUrl}/app/videos?checkout=success`
       : `${appUrl}/auth/complete?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${appUrl}/pricing`,
     ...(loggedIn && user

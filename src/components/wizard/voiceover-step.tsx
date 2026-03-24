@@ -444,12 +444,12 @@ export function VoiceoverStep({
         <Button
           type="button"
           disabled={!wizard.voiceMockReady || busy}
-          onClick={() => router.push(`/app/projects/${projectId}/wizard/arrange`)}
+          onClick={() => router.push(`/app/videos/${projectId}/wizard/arrange`)}
         >
           Continue to arrange
         </Button>
         <Link
-          href={`/app/projects/${projectId}/wizard/photos`}
+          href={`/app/videos/${projectId}/wizard/photos`}
           className={cn(buttonVariants({ variant: "outline" }))}
         >
           Back

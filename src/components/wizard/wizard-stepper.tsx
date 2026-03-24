@@ -22,7 +22,7 @@ type Props = {
 
 export function WizardStepper({ projectId }: Props) {
   const pathname = usePathname();
-  const base = `/app/projects/${projectId}/wizard`;
+  const base = `/app/videos/${projectId}/wizard`;
   const exportHref = `${base}/export`;
   const onExport = pathname === exportHref || pathname.endsWith("/wizard/export");
 

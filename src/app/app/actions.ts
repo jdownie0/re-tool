@@ -34,8 +34,8 @@ export async function createProject() {
     throw new Error(error?.message ?? "Failed to create project");
   }
 
-  revalidatePath("/app/projects");
-  redirect(`/app/projects/${data.id}/wizard/photos`);
+  revalidatePath("/app/videos");
+  redirect(`/app/videos/${data.id}/wizard/photos`);
 }
 
 export async function deleteProject(projectId: string) {
@@ -57,5 +57,5 @@ export async function deleteProject(projectId: string) {
     throw new Error(error.message);
   }
 
-  revalidatePath("/app/projects");
+  revalidatePath("/app/videos");
 }

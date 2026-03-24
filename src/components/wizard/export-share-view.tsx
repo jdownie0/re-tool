@@ -166,7 +166,7 @@ export function ExportShareView({
             <p className="text-sm font-medium">Finalizing your video…</p>
             <p className="max-w-sm text-center text-xs">
               This page will update when the file is available. You can also return to{" "}
-              <Link href={`/app/projects/${projectId}/wizard/review`} className="underline">
+              <Link href={`/app/videos/${projectId}/wizard/review`} className="underline">
                 Review
               </Link>{" "}
               to check progress.
@@ -184,7 +184,7 @@ export function ExportShareView({
           <div className="text-muted-foreground flex aspect-video flex-col items-center justify-center gap-2 p-8 text-center text-sm">
             <p>No final video found yet.</p>
             <Link
-              href={`/app/projects/${projectId}/wizard/review`}
+              href={`/app/videos/${projectId}/wizard/review`}
               className={cn(buttonVariants({ variant: "outline" }))}
             >
               Back to Review
@@ -268,13 +268,13 @@ export function ExportShareView({
 
       <div className="flex flex-wrap gap-3">
         <Link
-          href={`/app/projects/${projectId}/wizard/review`}
+          href={`/app/videos/${projectId}/wizard/review`}
           className={cn(buttonVariants({ variant: "outline" }))}
         >
           Back to review
         </Link>
-        <Link href="/app/projects" className={cn(buttonVariants({ variant: "ghost" }))}>
-          All projects
+        <Link href="/app/videos" className={cn(buttonVariants({ variant: "ghost" }))}>
+          All videos
         </Link>
       </div>
     </div>

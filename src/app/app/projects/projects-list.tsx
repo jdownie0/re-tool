@@ -108,7 +108,7 @@ export function ProjectsList({ projects, coverUrls }: Props) {
         return (
           <li key={p.id} className="group relative">
             <Link
-              href={`/app/projects/${p.id}/wizard/photos`}
+              href={`/app/videos/${p.id}/wizard/photos`}
               className={cn(
                 "bg-[var(--app-card)] block rounded-2xl border border-[var(--app-border)] p-4 shadow-[0_4px_24px_-6px_rgba(35,28,22,0.12)] transition-[box-shadow,transform] hover:-translate-y-px hover:shadow-[0_10px_36px_-10px_rgba(35,28,22,0.16)]",
                 deletingId === p.id && "pointer-events-none opacity-50",
