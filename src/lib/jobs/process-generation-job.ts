@@ -1,4 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  processComposeVideo,
+  shouldProcessComposeWithFfmpeg,
+} from "@/lib/jobs/compose-video";
 import { processMockGenerationJob } from "@/lib/jobs/mock-process";
 import {
   processSceneVideoWithFal,
@@ -6,7 +10,8 @@ import {
 } from "@/lib/jobs/scene-video-fal";
 
 /**
- * Completes a generation job: mock providers by default, Fal for `scene_video` when configured.
+ * Completes a generation job: mock providers by default, Fal for `scene_video` when configured,
+ * FFmpeg compose when `ENABLE_COMPOSE` is set.
  */
 export async function processGenerationJob(
   supabase: SupabaseClient,
@@ -24,6 +29,10 @@ export async function processGenerationJob(
 
   if (job.kind === "scene_video" && shouldProcessSceneVideoWithFal()) {
     return processSceneVideoWithFal(supabase, jobId);
+  }
+
+  if (job.kind === "compose" && shouldProcessComposeWithFfmpeg()) {
+    return processComposeVideo(supabase, jobId);
   }
 
   return processMockGenerationJob(supabase, jobId);

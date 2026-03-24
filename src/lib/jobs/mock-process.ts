@@ -1,5 +1,145 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { formatStorageClientError } from "@/lib/supabase/supabase-fetch";
+import {
+  formatBytesHuman,
+  getMaxRenderUploadBytes,
+  renderUploadErrorHint,
+} from "@/lib/supabase/storage-limits";
+import { uploadToRendersWithRetry } from "@/lib/supabase/render-storage-upload";
+import { finalRenderStorageObjectPath } from "@/lib/storage/final-render-key";
 import { mergeWizardMetadata } from "@/lib/wizard/metadata";
+
+/**
+ * Mock final export: copies only the **first** scene clip into `renders` (no FFmpeg).
+ * Full multi-clip concat, voice, music, and captions require FFmpeg on the server — see `compose-video` / `ENABLE_COMPOSE`.
+ */
+async function finalizeMockCompose(
+  supabase: SupabaseClient,
+  projectId: string,
+): Promise<Record<string, unknown>> {
+  const { data: project, error: projErr } = await supabase
+    .from("projects")
+    .select("user_id")
+    .eq("id", projectId)
+    .single();
+
+  if (projErr || !project) {
+    return {
+      note: "Mock compose — project not found.",
+      finalUrl: null,
+    };
+  }
+
+  const { data: clips, error: clipErr } = await supabase
+    .from("project_assets")
+    .select("storage_path")
+    .eq("project_id", projectId)
+    .eq("type", "video_clip")
+    .order("sort_order", { ascending: true, nullsFirst: false });
+
+  if (clipErr) {
+    return {
+      note: `Mock compose — could not load clips: ${clipErr.message}`,
+      finalUrl: null,
+    };
+  }
+
+  if (!clips?.length) {
+    return {
+      note: "Mock compose — add scene clips before exporting.",
+      finalUrl: null,
+    };
+  }
+
+  const firstPath = clips[0]!.storage_path;
+  const { data: blob, error: dlErr } = await supabase.storage
+    .from("generated-video")
+    .download(firstPath);
+
+  if (dlErr || !blob) {
+    return {
+      note: `Mock compose — could not read clip: ${dlErr?.message ?? "download failed"}`,
+      finalUrl: null,
+    };
+  }
+
+  const userId = project.user_id;
+  const outPath = finalRenderStorageObjectPath(userId, projectId);
+  const buf = await blob.arrayBuffer();
+  const maxUploadBytes = getMaxRenderUploadBytes();
+  if (buf.byteLength > maxUploadBytes) {
+    return {
+      note:
+        `Mock compose — final file is ${formatBytesHuman(buf.byteLength)} (max ${formatBytesHuman(maxUploadBytes)}). ` +
+        "Raise Storage limit in Dashboard and RETOOL_MAX_RENDER_UPLOAD_BYTES, or shorten clips.",
+      finalUrl: null,
+    };
+  }
+
+  const { error: upErr } = await uploadToRendersWithRetry(
+    supabase,
+    outPath,
+    () => new Uint8Array(buf),
+    {
+      contentType: "video/mp4",
+      upsert: true,
+    },
+  );
+
+  if (upErr) {
+    const detail = formatStorageClientError(upErr);
+    return {
+      note:
+        `Mock compose — could not upload final file: ${detail}.${renderUploadErrorHint(detail)}`,
+      finalUrl: null,
+    };
+  }
+
+  const { data: existing } = await supabase
+    .from("project_assets")
+    .select("id, storage_path")
+    .eq("project_id", projectId)
+    .eq("type", "final_render");
+
+  for (const row of existing ?? []) {
+    if (row.storage_path) {
+      await supabase.storage
+        .from("renders")
+        .remove([row.storage_path])
+        .catch(() => {});
+    }
+    await supabase.from("project_assets").delete().eq("id", row.id);
+  }
+
+  const { data: assetRow, error: assetErr } = await supabase
+    .from("project_assets")
+    .insert({
+      project_id: projectId,
+      type: "final_render",
+      storage_path: outPath,
+      mime_type: "video/mp4",
+    })
+    .select("id")
+    .single();
+
+  if (assetErr || !assetRow) {
+    return {
+      storage_path: outPath,
+      note: assetErr?.message ?? "Failed to save final_render row.",
+      finalUrl: null,
+    };
+  }
+
+  const n = clips?.length ?? 0;
+  return {
+    note:
+      n > 1
+        ? `Mock export: only the first of ${n} clips was copied (FFmpeg not available or ENABLE_COMPOSE=0). Install ffmpeg on the server; leave ENABLE_COMPOSE unset for auto-detect, or set to 1 — then you get all clips, voice, music, and optional burned captions.`
+        : "Mock export: single clip preview. Install ffmpeg for full concat, voice mux, music, and captions.",
+    storage_path: outPath,
+    final_asset_id: assetRow.id,
+  };
+}
 
 /**
  * Synchronously completes a queued generation job with mock outputs (no external AI).
@@ -69,7 +209,8 @@ export async function processMockGenerationJob(
       break;
     }
     case "compose": {
-      output = { ...output, finalUrl: null, note: "Mock compose — no render file." };
+      const mockFinal = await finalizeMockCompose(supabase, job.project_id);
+      output = { ...output, finalUrl: null, ...mockFinal };
       break;
     }
     default:
@@ -82,6 +223,7 @@ export async function processMockGenerationJob(
       status: "succeeded",
       output,
       provider: "mock",
+      progress: null,
     })
     .eq("id", jobId);
 
