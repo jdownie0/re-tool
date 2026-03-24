@@ -26,14 +26,16 @@ export default async function ProjectWizardLayout({ children, params }: Props) {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+      <WizardStepper projectId={project.id} />
       <div>
-        <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+        <p className="text-[var(--app-accent)] text-xs font-medium tracking-wide uppercase">
           {project.title}
         </p>
-        <h1 className="text-2xl font-semibold tracking-tight">Listing video</h1>
+        <h1 className="font-[family-name:var(--font-app-heading)] text-3xl font-semibold tracking-tight md:text-4xl">
+          Listing video
+        </h1>
       </div>
-      <WizardStepper projectId={project.id} />
       {children}
     </div>
   );

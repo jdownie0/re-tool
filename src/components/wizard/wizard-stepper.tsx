@@ -7,7 +7,7 @@ import type { WizardStep } from "@/lib/wizard/types";
 import { WIZARD_STEPS } from "@/lib/wizard/types";
 
 const LABELS: Record<WizardStep, string> = {
-  photos: "Photos",
+  photos: "Photos & listing",
   voiceover: "Voiceover",
   arrange: "Arrange",
   music: "Music",
@@ -28,21 +28,20 @@ export function WizardStepper({ projectId }: Props) {
 
   return (
     <nav
-      className="border-b"
       aria-label="Listing video steps"
     >
-      <ol className="flex flex-wrap gap-1 sm:gap-6">
+      <ol className="mx-auto grid w-[80%] grid-cols-3 gap-x-1 sm:grid-cols-6 sm:gap-x-2">
         {WIZARD_STEPS.map((step) => {
           const href = `${base}/${step}`;
           const active = pathname === href || pathname.endsWith(`/${step}`);
           return (
-            <li key={step}>
+            <li key={step} className="flex">
               <Link
                 href={href}
                 className={cn(
-                  "text-muted-foreground inline-block border-b-2 border-transparent px-1 py-3 text-sm font-medium transition-colors",
+                  "text-muted-foreground inline-flex w-full items-center justify-center border-b-2 border-[var(--app-border)] px-2 py-3.5 text-center text-base leading-none font-medium transition-colors hover:text-[var(--app-accent)]",
                   active &&
-                    "text-foreground border-foreground",
+                    "border-[var(--app-accent)] text-[var(--app-accent)]",
                 )}
               >
                 {LABELS[step]}
@@ -50,12 +49,12 @@ export function WizardStepper({ projectId }: Props) {
             </li>
           );
         })}
-        <li>
+        <li className="flex">
           <Link
             href={exportHref}
             className={cn(
-              "text-muted-foreground inline-block border-b-2 border-transparent px-1 py-3 text-sm font-medium transition-colors",
-              onExport && "text-foreground border-foreground",
+              "text-muted-foreground inline-flex w-full items-center justify-center border-b-2 border-[var(--app-border)] px-2 py-3.5 text-center text-base leading-none font-medium transition-colors hover:text-[var(--app-accent)]",
+              onExport && "border-[var(--app-accent)] text-[var(--app-accent)]",
             )}
           >
             {EXPORT_LABEL}
