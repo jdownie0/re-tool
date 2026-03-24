@@ -1,7 +1,28 @@
 import { createClient } from "@/lib/supabase/server";
-import { Button } from "@/components/ui/button";
-import { createProject } from "@/app/app/actions";
 import { ProjectsList } from "./projects-list";
+
+type PhotoRow = {
+  project_id: string;
+  storage_path: string;
+  sort_order: number | null;
+  created_at: string;
+};
+
+function pickFirstPhotoPerProject(rows: PhotoRow[]): Map<string, string> {
+  const sorted = [...rows].sort((a, b) => {
+    const sa = a.sort_order ?? 10_000;
+    const sb = b.sort_order ?? 10_000;
+    if (sa !== sb) return sa - sb;
+    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  });
+  const map = new Map<string, string>();
+  for (const row of sorted) {
+    if (!map.has(row.project_id)) {
+      map.set(row.project_id, row.storage_path);
+    }
+  }
+  return map;
+}
 
 export default async function ProjectsPage() {
   const supabase = await createClient();
@@ -15,22 +36,43 @@ export default async function ProjectsPage() {
     .eq("user_id", user!.id)
     .order("created_at", { ascending: false });
 
-  return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Projects</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Listing video projects map to rows in{" "}
-            <code className="rounded bg-muted px-1 py-0.5">projects</code>.
-          </p>
-        </div>
-        <form action={createProject}>
-          <Button type="submit">New project</Button>
-        </form>
-      </div>
+  const list = projects ?? [];
+  const projectIds = list.map((p) => p.id);
 
-      <ProjectsList projects={projects ?? []} />
+  const coverUrls: Record<string, string> = {};
+
+  if (projectIds.length > 0) {
+    const { data: photos } = await supabase
+      .from("project_assets")
+      .select("project_id, storage_path, sort_order, created_at")
+      .in("project_id", projectIds)
+      .eq("type", "photo");
+
+    const firstPaths = pickFirstPhotoPerProject((photos ?? []) as PhotoRow[]);
+    await Promise.all(
+      [...firstPaths.entries()].map(async ([projectId, storagePath]) => {
+        const { data } = await supabase.storage
+          .from("listing-photos")
+          .createSignedUrl(storagePath, 3600);
+        if (data?.signedUrl) {
+          coverUrls[projectId] = data.signedUrl;
+        }
+      }),
+    );
+  }
+
+  return (
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 pb-4">
+      <header>
+        <h1 className="font-[family-name:var(--font-app-heading)] text-4xl font-semibold tracking-tight text-[var(--app-foreground)] md:text-5xl">
+          Projects
+        </h1>
+        <p className="mt-2 max-w-xl text-sm text-[var(--app-muted)]">
+          Open a listing to continue your video, or create a new project.
+        </p>
+      </header>
+
+      <ProjectsList projects={list} coverUrls={coverUrls} />
     </div>
   );
 }
