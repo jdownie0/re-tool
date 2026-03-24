@@ -13,6 +13,7 @@ import { MUSIC_PRESETS } from "@/lib/wizard/constants";
 import type { WizardMetadata } from "@/lib/wizard/types";
 import {
   enqueueMockJob,
+  generateMusicWithElevenLabs,
   setMusicSkipped,
   updateWizardMetadata,
 } from "@/app/app/projects/[id]/wizard/actions";
@@ -28,9 +29,17 @@ type Props = {
   projectId: string;
   wizard: WizardMetadata;
   photos: PhotoRow[];
+  elevenLabsConfigured: boolean;
+  /** Signed URL for latest `music` asset in `generated-audio`, when present. */
+  musicAudioUrl: string | null;
 };
 
-export function MusicStep({ projectId, wizard }: Props) {
+export function MusicStep({
+  projectId,
+  wizard,
+  elevenLabsConfigured,
+  musicAudioUrl,
+}: Props) {
   const router = useRouter();
   const [prompt, setPrompt] = useState(wizard.musicPrompt);
   const [preset, setPreset] = useState<string | null>(wizard.musicPreset);
@@ -67,12 +76,16 @@ export function MusicStep({ projectId, wizard }: Props) {
         musicPrompt: prompt,
         musicSkipped: false,
       });
-      await enqueueMockJob(
-        projectId,
-        "music",
-        { preset: preset ?? "custom", prompt },
-        `music-${projectId}`,
-      );
+      if (elevenLabsConfigured) {
+        await generateMusicWithElevenLabs(projectId);
+      } else {
+        await enqueueMockJob(
+          projectId,
+          "music",
+          { preset: preset ?? "custom", prompt },
+          `music-${projectId}`,
+        );
+      }
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed");
@@ -102,7 +115,9 @@ export function MusicStep({ projectId, wizard }: Props) {
       <div>
         <h2 className="text-lg font-semibold tracking-tight">Background music</h2>
         <p className="text-muted-foreground mt-1 text-sm">
-          Pick a mood or describe a style. Mock mode completes instantly — no Suno API yet.
+          {elevenLabsConfigured
+            ? "Pick a mood or describe a style. We generate instrumental background audio with Eleven Labs (length matches your video duration)."
+            : "Pick a mood or describe a style. Without an Eleven Labs key, this step uses an instant mock placeholder."}
         </p>
       </div>
 
@@ -149,12 +164,23 @@ export function MusicStep({ projectId, wizard }: Props) {
       </div>
 
       {wizard.musicMockReady && !wizard.musicSkipped ? (
-        <div className="bg-muted/40 space-y-2 rounded-lg border p-4">
-          <p className="text-sm font-medium">Mock music track ready</p>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Sparkles className="size-3.5" />
-            20s placeholder duration
-          </div>
+        <div className="bg-muted/40 space-y-3 rounded-lg border p-4">
+          <p className="text-sm font-medium">
+            {musicAudioUrl ? "Background music ready" : "Mock music track ready"}
+          </p>
+          {musicAudioUrl ? (
+            <audio
+              controls
+              className="h-9 w-full max-w-md"
+              src={musicAudioUrl}
+              preload="metadata"
+            />
+          ) : (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Sparkles className="size-3.5" />
+              {(wizard.musicDurationMs ?? 20_000) / 1000}s placeholder duration
+            </div>
+          )}
         </div>
       ) : null}
 
@@ -172,7 +198,7 @@ export function MusicStep({ projectId, wizard }: Props) {
           onClick={generateMusic}
         >
           <Sparkles className="size-4" />
-          Generate music (mock)
+          {elevenLabsConfigured ? "Generate music" : "Generate music (mock)"}
         </Button>
         <Button type="button" variant="outline" disabled={busy} onClick={skip}>
           Skip background music

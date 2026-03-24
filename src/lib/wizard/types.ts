@@ -25,6 +25,8 @@ export type WizardMetadata = {
   musicPrompt: string;
   musicSkipped: boolean;
   musicMockReady: boolean;
+  /** Target length used for Eleven Labs compose / mock (ms). */
+  musicDurationMs?: number;
 };
 
 export function defaultWizardMetadata(): WizardMetadata {

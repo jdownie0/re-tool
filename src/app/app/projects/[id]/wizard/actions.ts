@@ -202,6 +202,82 @@ export async function generateVoiceoverWithElevenLabs(projectId: string) {
   revalidatePath(`/app/projects/${projectId}/wizard`);
 }
 
+/**
+ * Composes instrumental background music with Eleven Labs, stores MP3 in `generated-audio`,
+ * and saves a `music` asset. Length follows project `duration_seconds` (clamped to API limits).
+ */
+export async function generateMusicWithElevenLabs(projectId: string) {
+  const { supabase, user, project } = await assertProject(projectId);
+  const wizard = getWizardFromMetadata(project.metadata);
+
+  const preset = wizard.musicPreset;
+  const userPrompt = wizard.musicPrompt?.trim() ?? "";
+  if (!preset && !userPrompt) {
+    throw new Error("Pick a mood or describe a style.");
+  }
+
+  if (!getElevenLabsApiKey()) {
+    throw new Error("Eleven Labs is not configured. Set ELEVEN_LABS_KEY_ID.");
+  }
+
+  const prompt = buildMusicPromptForElevenLabs(preset, userPrompt);
+  const durationSec =
+    project.duration_seconds ?? DEFAULT_WIZARD_DURATION_SECONDS;
+  const musicLengthMs = clampMusicLengthMs(durationSec * 1000);
+
+  const composed = await composeMusicMp3(prompt, musicLengthMs);
+  if (!composed.ok) {
+    throw new Error(composed.error);
+  }
+
+  const { data: oldMusic } = await supabase
+    .from("project_assets")
+    .select("id, storage_path")
+    .eq("project_id", projectId)
+    .eq("type", "music");
+
+  for (const asset of oldMusic ?? []) {
+    await supabase.storage.from("generated-audio").remove([asset.storage_path]);
+    await supabase.from("project_assets").delete().eq("id", asset.id);
+  }
+
+  const storagePath = `${user.id}/${projectId}/background-music.mp3`;
+  const { error: upErr } = await supabase.storage
+    .from("generated-audio")
+    .upload(storagePath, new Uint8Array(composed.buffer), {
+      contentType: "audio/mpeg",
+      upsert: true,
+    });
+  if (upErr) {
+    throw new Error(upErr.message);
+  }
+
+  const { error: insErr } = await supabase.from("project_assets").insert({
+    project_id: projectId,
+    type: "music",
+    storage_path: storagePath,
+    mime_type: "audio/mpeg",
+    sort_order: 0,
+    duration_ms: musicLengthMs,
+  });
+  if (insErr) {
+    throw new Error(insErr.message);
+  }
+
+  const next = mergeWizardMetadata(
+    project.metadata as Record<string, unknown> | null,
+    {
+      musicPreset: preset,
+      musicPrompt: userPrompt,
+      musicSkipped: false,
+      musicMockReady: true,
+      musicDurationMs: musicLengthMs,
+    },
+  );
+  await supabase.from("projects").update({ metadata: next }).eq("id", projectId);
+  revalidatePath(`/app/projects/${projectId}/wizard`);
+}
+
 export async function setDurationAndPhotos(
   projectId: string,
   durationSeconds: number,

@@ -132,6 +132,7 @@ export async function processMockGenerationJob(
           musicMockReady: true,
           musicPreset: musicIn.preset ?? null,
           musicPrompt: musicIn.prompt ?? "",
+          musicDurationMs: 20_000,
         }),
       })
       .eq("id", job.project_id);
