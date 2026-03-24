@@ -1,0 +1,2 @@
+-- Optional dev seed. Not required for the scaffold.
+-- Example: insert a test user via Supabase Auth UI, then attach data here if needed.
